@@ -1,18 +1,18 @@
-/* ============ visuals.js — Flux2 image generation step (spec FR-IMG) ============
+/* ============ visuals.js — image generation dialog (spec FR-IMG) ============
    ADAPTER NOTE (OQ-1): the API contract is assumed OpenAI-images-style.
    If your OpenShift AI runtime serves a different contract (e.g. ComfyUI),
    swap out generateImage() below — everything else stays unchanged. */
 "use strict";
 (function (SF) {
-  const { $, el, state } = SF;
+  const { $, el, state, t } = SF;
   let stopRequested = false;
   let running = false;
 
-  /** Call Flux2. Returns { mime, b64 }. Sequential use only (spec §7.5). */
+  /** Call the image model. Returns { mime, b64 }. Sequential use only (spec §7.5). */
   async function generateImage(prompt, opts) {
     opts = opts || {};
     const c = state.config;
-    if (!c.fluxBase) throw new Error("Image endpoint not configured — open Settings.");
+    if (!c.fluxBase) throw new Error(t("err.imgNotConfigured"));
     const body = JSON.stringify({
       model: c.fluxModel || "flux2",
       prompt,
@@ -27,8 +27,8 @@
         body,
       }, opts.timeoutS || Math.max(state.config.timeoutS, 180));
       if (!r.ok) {
-        if (r.status === 401 || r.status === 403) throw Object.assign(new Error("Token rejected (" + r.status + ") — check the Flux2 token in Settings."), { tokenProblem: true });
-        throw Object.assign(new Error("Image endpoint returned " + r.status), { detail: await r.text().catch(() => "") });
+        if (r.status === 401 || r.status === 403) throw Object.assign(new Error(t("err.imgToken", { status: r.status })), { tokenProblem: true });
+        throw Object.assign(new Error(t("err.imgStatus", { status: r.status })), { detail: await r.text().catch(() => "") });
       }
       const ct = r.headers.get("content-type") || "";
       if (ct.startsWith("image/")) { /* some runtimes return raw bytes */
@@ -39,14 +39,14 @@
       const json = await r.json();
       const d = json && json.data && json.data[0];
       const b64 = (d && (d.b64_json || d.b64)) || (Array.isArray(json.images) ? (typeof json.images[0] === "string" ? json.images[0] : json.images[0] && json.images[0].b64_json) : null);
-      if (!b64) throw Object.assign(new Error("Image endpoint response not understood (no b64 image found)."), { detail: JSON.stringify(json).slice(0, 1500) });
+      if (!b64) throw Object.assign(new Error(t("err.imgShape")), { detail: JSON.stringify(json).slice(0, 1500) });
       return { mime: "image/png", b64: String(b64).replace(/^data:[^,]+,/, "") };
     };
     try { return await doCall(); }
     catch (e) {
       if (e.tokenProblem || e.name === "SyntaxError") throw e;
-      if (e.name === "AbortError") throw new Error("Image request timed out.");
-      if (e.name === "TypeError") throw new Error("Image endpoint unreachable — check URL/CORS in Settings.");
+      if (e.name === "AbortError") throw new Error(t("err.imgTimeout"));
+      if (e.name === "TypeError") throw new Error(t("err.imgUnreachable"));
       throw e;
     }
   }
@@ -56,16 +56,22 @@
     return (prefix ? prefix + ", " : "") + slide.image_prompt;
   }
 
-  /* ---------- step-5 UI ---------- */
+  /* ---------- dialog UI ---------- */
+  function openDialog() {
+    renderList();
+    const dlg = $("#dlg-visuals");
+    if (!dlg.open) dlg.showModal();
+  }
+
   function renderList() {
     const wrap = $("#visuals-list");
     wrap.textContent = "";
     const slides = (state.outline ? state.outline.slides : []).filter((s) => s.image_prompt);
     if (!slides.length) {
-      wrap.appendChild(el("p", { class: "muted", text: "No slides have an image prompt. Add prompts in the editor, or continue." }));
+      wrap.appendChild(el("p", { class: "muted", text: t("vis.none") }));
       return;
     }
-    slides.forEach((slide, i) => wrap.appendChild(renderRow(slide, i)));
+    slides.forEach((slide) => wrap.appendChild(renderRow(slide)));
   }
 
   function renderRow(slide) {
@@ -74,17 +80,17 @@
     const row = el("div", { class: "visual-row", "data-id": slide.id });
     const thumb = el("div", { class: "thumb-box" }, asset
       ? el("img", { alt: "", src: `data:${asset.mime};base64,${asset.b64}` })
-      : "no image yet");
-    const prompt = el("textarea", { rows: "3", "aria-label": "Image prompt" });
+      : t("vis.noImg"));
+    const prompt = el("textarea", { rows: "3", "aria-label": "Image prompt", dir: "auto" });
     prompt.value = slide.image_prompt || "";
     prompt.addEventListener("input", () => { slide.image_prompt = prompt.value.trim() || null; });
-    const status = el("span", { class: "visual-status", text: asset ? (asset.kind === "user_image" ? "✔ your upload" : "✔ generated") : "" });
+    const status = el("span", { class: "visual-status", text: asset ? (asset.kind === "user_image" ? t("vis.own") : t("vis.ok")) : "" });
     if (asset) status.classList.add("ok");
 
-    const genBtn = el("button", { class: "mini", text: asset ? "↻ Retry / regenerate" : "✦ Generate", onclick: () => generateOne(slide, row) });
-    const rmBtn = el("button", { class: "mini", text: "✕ Remove image", onclick: () => { delete state.assets[slide.id]; renderList(); } });
+    const genBtn = el("button", { class: "mini", text: asset ? t("vis.retry") : t("vis.gen"), onclick: () => generateOne(slide, row).then(() => SF.emit("outline-edited")).catch(() => {}) });
+    const rmBtn = el("button", { class: "mini", text: t("vis.rm"), onclick: () => { delete state.assets[slide.id]; renderList(); SF.emit("outline-edited"); } });
     const right = el("div", {}, [
-      el("div", { class: "label", text: `Slide ${idx}: ${slide.title || "(untitled)"}` }),
+      el("div", { class: "label", text: t("vis.slide", { n: idx, title: slide.title || "…" }) }),
       prompt,
       el("div", { class: "row" }, [genBtn, asset ? rmBtn : null, status]),
     ]);
@@ -96,15 +102,13 @@
   async function generateOne(slide, row) {
     row.classList.add("busy");
     const status = row.querySelector(".visual-status");
-    status.className = "visual-status";
-    status.textContent = "generating…";
+    if (status) { status.className = "visual-status"; status.textContent = t("vis.busy"); }
     try {
       const img = await generateImage(fullPrompt(slide));
       state.assets[slide.id] = { kind: "image", mime: img.mime, b64: img.b64 };
       renderList();
     } catch (e) {
-      status.textContent = "✘ " + e.message;
-      status.classList.add("fail");
+      if (status) { status.textContent = "✘ " + e.message; status.classList.add("fail"); }
       row.classList.remove("busy");
       throw e;
     }
@@ -121,24 +125,27 @@
     let done = 0, failed = 0;
     for (const slide of targets) {
       if (stopRequested) break;
-      progress.textContent = `Generating image ${done + failed + 1} of ${targets.length}…`;
+      progress.textContent = t("vis.progress", { i: done + failed + 1, n: targets.length });
       progress.classList.add("busy");
       const row = document.querySelector(`.visual-row[data-id="${slide.id}"]`);
       try { await generateOne(slide, row || $("#visuals-list")); done++; }
       catch (e) { failed++; if (e.tokenProblem) break; }
     }
     progress.classList.remove("busy");
-    progress.textContent = stopRequested ? `Stopped — ${done} generated.` : `Done: ${done} generated${failed ? `, ${failed} failed (retry individually)` : ""}.`;
+    progress.textContent = stopRequested
+      ? t("vis.stopped", { n: done })
+      : t("vis.doneAll", { ok: done, failed: failed ? t("vis.failedPart", { n: failed }) : "" });
     $("#btn-gen-all-images").hidden = false;
     $("#btn-stop-images").hidden = true;
     running = false;
+    SF.emit("outline-edited"); // refresh preview with new images
   }
 
   function init() {
     $("#btn-gen-all-images").addEventListener("click", generateAll);
     $("#btn-stop-images").addEventListener("click", () => { stopRequested = true; SF.llm.cancelActive(); });
-    $("#btn-skip-visuals").addEventListener("click", () => SF.app.goto(6));
+    SF.on("lang-changed", () => { if ($("#dlg-visuals").open) renderList(); });
   }
 
-  SF.visuals = { init, renderList, generateImage };
+  SF.visuals = { init, renderList, generateImage, openDialog };
 })(window.SF);

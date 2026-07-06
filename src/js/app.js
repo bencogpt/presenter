@@ -1,57 +1,45 @@
-/* ============ app.js — wizard navigation, generate step, boot ============ */
+/* ============ app.js — workspace controller, dialogs, language, boot ============
+   No wizard: the main stage always shows the live preview (or an empty
+   state); the sidebar loads the document and edits slides; settings /
+   images / export live in dialogs. */
 "use strict";
 (function (SF) {
-  const { $, $$, el, state } = SF;
+  const { $, $$, el, state, t } = SF;
 
-  /* ---------- wizard ---------- */
-  function stepAvailable(n) {
-    switch (n) {
-      case 1: case 2: return true;
-      case 3: return !!state.doc;
-      case 4: return !!state.outline;
-      case 5: case 6: case 7: return !!state.outline && state.approved;
-      default: return false;
-    }
+  /* Reveal progressive sections of the UI as the user advances. */
+  function updateUI() {
+    const hasDoc = !!state.doc;
+    const hasOutline = !!state.outline;
+    $("#side-generate").hidden = !hasDoc && !hasOutline;
+    $("#side-slides").hidden = !hasOutline;
+    $("#edit-actions").hidden = !hasOutline;
+    $("#deck-actions").hidden = !hasOutline;
+    $("#btn-generate").textContent = t(hasOutline ? "gen.redo" : "gen.go");
+    if (hasOutline) $("#theme-select").value = state.theme;
   }
 
-  function goto(n) {
-    if (!stepAvailable(n)) return;
-    state.step = n;
-    for (let i = 1; i <= 7; i++) $("#panel-" + i).hidden = i !== n;
-    $$("#stepbar .step").forEach((btn) => {
-      const s = +btn.dataset.step;
-      btn.disabled = !stepAvailable(s);
-      btn.classList.toggle("done", s < n && stepAvailable(s));
-      if (s === n) btn.setAttribute("aria-current", "step");
-      else btn.removeAttribute("aria-current");
-    });
-    /* per-step side effects */
-    if (n === 4) SF.editor.renderCards();
-    if (n === 5) SF.visuals.renderList();
-    if (n === 6) SF.render.renderPreview();
-    if (n === 7) SF.exporter.updateSizeWarning();
-    document.querySelector("#panel-" + n + " h1")?.focus?.();
-    window.scrollTo(0, 0);
-  }
-
-  /* ---------- step 3: outline generation ---------- */
+  /* ---------- outline generation ---------- */
   let generating = false;
 
   async function runGenerate() {
     if (generating || !state.doc) return;
+    if (!SF.config.isLlmConfigured()) { SF.config.openDialog(); SF.toast(t("cfg.needLlm"), "error"); return; }
+    if (state.outline) {
+      const ok = await SF.confirmDialog(t("gen.confirmRedo"), t("gen.redo"));
+      if (!ok) return;
+    }
     generating = true;
     const status = $("#gen-status");
     const errBox = $("#gen-error");
     const t0 = performance.now();
     errBox.hidden = true;
-    $("#json-fix-wrap").hidden = true;
     $("#btn-generate").disabled = true;
     $("#btn-cancel-generate").hidden = false;
     status.classList.add("busy");
 
     const ticker = setInterval(() => {
       const secs = Math.round((performance.now() - t0) / 1000);
-      status.textContent = status.dataset.msg + ` (${secs}s)`;
+      status.textContent = (status.dataset.msg || "") + ` (${secs}s)`;
     }, 1000);
     const onStatus = (msg) => { status.dataset.msg = msg; status.textContent = msg; };
 
@@ -66,21 +54,23 @@
       const { outline, sourceText } = await SF.llm.generateOutline(state.doc.text, state.gen, onStatus);
       state.lastSourceText = sourceText;
       state.outline = outline;
-      state.approved = false;
+      state.approved = true; // live preview = continuous review; generation/export stay explicit
       SF.history.resetHistory();
-      onStatus(`✔ Outline ready: ${outline.slides.length} slides.`);
+      onStatus(t("st.ready", { n: outline.slides.length }));
       SF.emit("outline-replaced");
-      goto(4);
+      updateUI();
+      /* offer image generation if the outline suggests images and Flux is configured */
+      if (state.config.fluxBase && outline.slides.some((s) => s.image_prompt)) SF.visuals.openDialog();
     } catch (e) {
       onStatus("");
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
-        $("#json-fix-wrap").hidden = false;
         $("#json-fix-area").value = e.rawOutput;
+        $("#dlg-jsonfix").showModal();
       } else {
         errBox.hidden = false;
         $("#gen-error-msg").textContent = e.message;
-        $("#gen-error-detail").textContent = e.detail || "(no further details)";
+        $("#gen-error-detail").textContent = e.detail || "—";
       }
     } finally {
       clearInterval(ticker);
@@ -95,13 +85,13 @@
     try {
       const outline = SF.schema.validateOutline(SF.llm.extractJson($("#json-fix-area").value));
       state.outline = outline;
-      state.approved = false;
+      state.approved = true;
       SF.history.resetHistory();
-      $("#json-fix-wrap").hidden = true;
+      $("#dlg-jsonfix").close();
       SF.emit("outline-replaced");
-      goto(4);
+      updateUI();
     } catch (e) {
-      SF.toast("Still not valid: " + e.message, "error", 7000);
+      SF.toast(t("jf.still", { msg: e.message }), "error", 7000);
     }
   }
 
@@ -111,15 +101,21 @@
       return typeof fetch === "function" && typeof FileReader === "function" &&
         typeof structuredClone === "function" &&
         !!document.createElement("canvas").getContext("2d") &&
-        typeof AbortController === "function";
+        typeof AbortController === "function" &&
+        typeof HTMLDialogElement === "function";
     } catch (e) { return false; }
   }
 
   function boot() {
     if (!browserOk()) {
+      SF.i18n.applyStatic();
       $("#unsupported-banner").hidden = false;
       return;
     }
+
+    /* UI language: DEFAULT_CONFIG.uiLang > saved choice > browser language */
+    const forced = (window.DEFAULT_CONFIG || {}).uiLang;
+    SF.i18n.setLang(forced || SF.i18n.initialLang());
 
     /* slide count selector: auto + 5..40 (FR-LLM-4) */
     const count = $("#gen-count");
@@ -132,24 +128,44 @@
     SF.visuals.init();
     SF.exporter.init();
 
-    $$("#stepbar .step").forEach((btn) => btn.addEventListener("click", () => goto(+btn.dataset.step)));
-    $$("[data-goto]").forEach((btn) => btn.addEventListener("click", () => goto(+btn.dataset.goto)));
-    $("#btn-open-settings").addEventListener("click", () => goto(1));
+    /* header actions */
+    $("#btn-open-settings").addEventListener("click", SF.config.openDialog);
+    $("#btn-images").addEventListener("click", SF.visuals.openDialog);
+    $("#btn-export").addEventListener("click", SF.exporter.openDialog);
+    $("#btn-lang").addEventListener("click", () => {
+      SF.i18n.setLang(SF.i18n.getLang() === "he" ? "en" : "he");
+    });
+    $("#theme-select").addEventListener("change", (e) => {
+      state.theme = e.target.value;
+      SF.emit("theme-changed");
+    });
+    $("#btn-clear-session").addEventListener("click", async () => {
+      const ok = await SF.confirmDialog(t("cl.confirm"), t("cl.btn"));
+      if (!ok) return;
+      SF.clearSession();
+      updateUI();
+      SF.toast(t("cl.done"), "ok");
+    });
+
+    /* generation */
     $("#btn-generate").addEventListener("click", runGenerate);
     $("#btn-cancel-generate").addEventListener("click", () => SF.llm.cancelActive());
     $("#btn-json-fix").addEventListener("click", manualJsonFix);
-    $("#btn-clear-session").addEventListener("click", async () => {
-      const ok = await SF.confirmDialog("Clear session? This wipes tokens, document text, outline and all generated images from memory (and stored tokens, if any).", "Clear everything");
-      if (!ok) return;
-      SF.clearSession();
-      goto(SF.config.isLlmConfigured() ? 2 : 1);
-      SF.toast("Session cleared.", "ok");
+
+    /* generic dialog close buttons ([data-close]) */
+    $$("dialog .dlg-close, dialog [data-close]").forEach((btn) => {
+      btn.addEventListener("click", () => btn.closest("dialog").close());
     });
 
-    /* step 1 auto-skipped once configured (spec §4) */
-    goto(SF.config.isLlmConfigured() ? 2 : 1);
+    SF.on("doc-changed", updateUI);
+    SF.on("lang-changed", updateUI);
+    SF.on("session-cleared", updateUI);
+    updateUI();
+
+    /* first run: model not configured yet → open the settings dialog */
+    if (!SF.config.isLlmConfigured()) SF.config.openDialog();
   }
 
-  SF.app = { goto, boot };
+  SF.app = { updateUI, boot };
   document.addEventListener("DOMContentLoaded", boot);
 })(window.SF);

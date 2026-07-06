@@ -1,7 +1,7 @@
 /* ============ exporter.js — standalone deck, project files, PDF (spec FR-EXP) ============ */
 "use strict";
 (function (SF) {
-  const { $, el, state } = SF;
+  const { $, el, state, t } = SF;
 
   /* Because every library/style is inlined in THIS file, the exporter can
      read its own <script>/<style> tags and re-embed them — no duplication,
@@ -120,9 +120,9 @@
       });
       const safeName = (state.outline.title || "presentation").replace(/[^\wÀ-￿ -]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "presentation";
       SF.downloadFile(safeName + ".html", html, "text/html;charset=utf-8");
-      SF.toast(`Exported ${SF.fmtBytes(html.length)} — opens offline in any modern browser.`, "ok", 6000);
+      SF.toast(t("ex.done", { size: SF.fmtBytes(html.length) }), "ok", 6000);
     } catch (e) {
-      SF.toast("Export failed: " + e.message, "error", 8000);
+      SF.toast(t("ex.failed", { msg: e.message }), "error", 8000);
     } finally { btn.disabled = false; }
   }
 
@@ -147,7 +147,7 @@
   async function importProject(file) {
     try {
       const json = JSON.parse(await file.text());
-      if (json.format !== "slideforge-project") throw new Error("Not a SlideForge project file.");
+      if (json.format !== "slideforge-project") throw new Error(t("ex.notProject"));
       /* re-validate + sanitize EVERYTHING (defense against tampered files, §5.2) */
       const outline = SF.schema.validateOutline(json.outline);
       const assets = {};
@@ -173,12 +173,13 @@
       state.approved = true;
       SF.history.resetHistory();
       $("#theme-select").value = state.theme;
-      $("#theme-select-2").value = state.theme;
       SF.emit("outline-replaced");
-      SF.toast(`Project loaded: ${outline.slides.length} slides.`, "ok");
-      SF.app.goto(4);
+      SF.emit("theme-changed");
+      SF.toast(t("ex.projLoaded", { n: outline.slides.length }), "ok");
+      $("#dlg-export").close();
+      SF.app.updateUI();
     } catch (e) {
-      SF.toast("Could not load project: " + e.message, "error", 8000);
+      SF.toast(t("ex.projBad", { msg: e.message }), "error", 8000);
     }
   }
 
@@ -204,9 +205,15 @@
     const est = estimateSize();
     if (est > 50 * 1024 * 1024) {
       warnBox.hidden = false;
-      warnBox.textContent = `Estimated export size ${SF.fmtBytes(est)} (>50 MB). Consider enabling image downscaling below.`;
+      warnBox.textContent = t("ex.sizeWarn", { size: SF.fmtBytes(est) });
       $("#exp-downscale").checked = true;
     } else warnBox.hidden = true;
+  }
+
+  function openDialog() {
+    updateSizeWarning();
+    const dlg = $("#dlg-export");
+    if (!dlg.open) dlg.showModal();
   }
 
   function init() {
@@ -216,5 +223,5 @@
     $("#btn-print-pdf").addEventListener("click", printPdf);
   }
 
-  SF.exporter = { init, exportDeck, exportProject, importProject, printPdf, updateSizeWarning, buildDeckHtml };
+  SF.exporter = { init, exportDeck, exportProject, importProject, printPdf, updateSizeWarning, buildDeckHtml, openDialog };
 })(window.SF);

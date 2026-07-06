@@ -21,23 +21,32 @@ Copy it into the air-gapped network, serve or open it, done.
 
 ## Quick start (users)
 
-1. Open `slideforge.html` (ideally from the internal static host — see below).
-2. **Setup**: enter the LLM base URL, model name and token; press *Test
-   connection*. Flux2 is optional. Tokens stay in memory only unless you
-   double-opt-in to persistence.
-3. **Upload** a document (or paste text), trim the extracted text.
-4. **Generate outline** — pick slide count, tone, language, visuals density.
-5. **Review & edit** — every slide is a card: bullets, layout, speaker notes,
-   chart data table, image prompt. Drag to reorder, undo/redo, per-slide
-   regenerate. Nothing is built until you press **Approve**.
-6. **Visuals** — generate images per slide (accept / retry / skip), or upload
-   your own.
-7. **Present** — 16:9, large type, keyboard nav (`F` fullscreen, `S` speaker
-   notes, `ESC` overview). The deck is a fixed 1280×720 canvas that reveal.js
-   scales to any window or browser zoom without breaking the layout.
-8. **Export** — standalone `presentation.html` (images embedded as base64,
-   charts baked to PNG or kept live), `*.slideforge.json` project file for
-   save/resume (never contains tokens), or PDF via the browser print dialog.
+The UI is a single workspace: the **live 16:9 preview fills the main window**
+and the **side panel loads the document and edits slides**. Model
+configuration is not part of the flow — it lives in the **⚙ Settings dialog**
+(opened automatically the very first time, invisible afterwards).
+
+1. Open `slideforge.html`. On first run the settings dialog asks for the
+   text-model URL/name/token (image model optional); tokens stay in memory
+   only unless you double-opt-in to persistence. After that, settings are
+   reachable only via the ⚙ icon.
+2. **Side panel**: drop a `.docx`/`.pdf`/`.md`/`.txt` (or paste text), trim
+   the extracted text if needed, pick slide count / tone / language /
+   visuals, press **Generate outline**.
+3. The deck appears immediately in the main preview and updates live with
+   every edit. Slides are cards in the side panel: bullets, layout, chart
+   data table, image prompt, speaker notes; drag to reorder, undo/redo,
+   per-slide regenerate. Clicking a card jumps the preview to that slide.
+4. **✦ Images** (header) opens the image-generation dialog (per-slide
+   accept / retry / skip, or upload your own). **▶ Present** goes fullscreen
+   (`F`/`S`/`ESC` reveal.js keys). **⬇ Export** downloads the standalone
+   `presentation.html`, a token-free project file, or prints to PDF.
+
+**UI languages:** English and Hebrew (עברית) — the header toggle switches
+instantly, and the Hebrew UI is fully right-to-left. The default follows the
+browser language; admins can force one via `uiLang` in `DEFAULT_CONFIG`.
+Slide *content* language is independent and follows the source document (or
+the explicit selection), with RTL handled per text node.
 
 ## Deployment (admins)
 

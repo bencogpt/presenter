@@ -1,7 +1,9 @@
-/* ============ config.js — settings, token handling, connectivity tests ============ */
+/* ============ config.js — settings dialog, token handling, connectivity tests ============
+   Configuration lives in the ⚙ Settings dialog (auto-opened on first run),
+   never as a wizard step. */
 "use strict";
 (function (SF) {
-  const { $, state } = SF;
+  const { $, state, t } = SF;
   const LS_CFG = "slideforge.config";
   const LS_TOK = "slideforge.tokens";
 
@@ -89,12 +91,12 @@
   /* ---------- connectivity tests (spec FR-CFG-2) ---------- */
   async function testLlm() {
     const out = $("#llm-test-result");
-    out.className = "test-result"; out.textContent = "Testing…";
+    out.className = "test-result"; out.textContent = t("cfg.testing");
     readForm();
     try {
       const t0 = performance.now();
       await SF.llm.chat([{ role: "user", content: "Reply with the single word: pong" }], { maxTokens: 8, timeoutS: 30 });
-      out.textContent = `✔ OK (${Math.round(performance.now() - t0)} ms)`;
+      out.textContent = t("cfg.testOk", { ms: Math.round(performance.now() - t0) });
       out.classList.add("ok");
     } catch (e) {
       out.textContent = "✘ " + e.message;
@@ -104,20 +106,20 @@
 
   async function testFlux() {
     const out = $("#flux-test-result");
-    out.className = "test-result"; out.textContent = "Testing…";
+    out.className = "test-result"; out.textContent = t("cfg.testing");
     readForm();
     const c = state.config;
-    if (!c.fluxBase) { out.textContent = "✘ No base URL set"; out.classList.add("fail"); return; }
+    if (!c.fluxBase) { out.textContent = t("cfg.noUrl"); out.classList.add("fail"); return; }
     try {
       /* cheap probe first (OpenAI-style /v1/models), tiny image as fallback */
       const r = await SF.llm.rawFetch(c.fluxBase + "/v1/models", {
         headers: c.fluxToken ? { Authorization: "Bearer " + c.fluxToken } : {},
       }, 20);
-      if (r.ok) { out.textContent = "✔ Endpoint reachable"; out.classList.add("ok"); return; }
-      if (r.status === 401 || r.status === 403) throw new Error("Token rejected (" + r.status + ")");
+      if (r.ok) { out.textContent = t("cfg.reachable"); out.classList.add("ok"); return; }
+      if (r.status === 401 || r.status === 403) throw new Error(t("err.imgToken", { status: r.status }));
       /* fall through to image probe */
       await SF.visuals.generateImage("test pattern, minimal", { size: "256x256", timeoutS: 60 });
-      out.textContent = "✔ OK (test image generated)";
+      out.textContent = t("cfg.testImg");
       out.classList.add("ok");
     } catch (e) {
       out.textContent = "✘ " + e.message;
@@ -128,6 +130,12 @@
   function isLlmConfigured() {
     const c = state.config;
     return !!(c.llmBase && c.llmModel);
+  }
+
+  function openDialog() {
+    fillForm();
+    const dlg = $("#dlg-settings");
+    if (!dlg.open) dlg.showModal();
   }
 
   function init() {
@@ -143,9 +151,7 @@
     });
     $("#cfg-persist-tokens").addEventListener("change", async () => {
       if ($("#cfg-persist-tokens").checked) {
-        const ok = await SF.confirmDialog(
-          "Store API tokens in this browser's localStorage? Anyone with access to this machine account could read them. Never enable this on a shared computer.",
-          "I understand — store tokens");
+        const ok = await SF.confirmDialog(t("cfg.tokenConfirm"), t("cfg.tokenBtn"));
         if (!ok) $("#cfg-persist-tokens").checked = false;
       }
       readForm();
@@ -157,13 +163,14 @@
       $("#cfg-system-prompt").value = SF.llmDefaults.systemPrompt;
       readForm();
     });
-    $("#btn-setup-done").addEventListener("click", () => {
+    $("#btn-settings-done").addEventListener("click", () => {
       readForm();
-      if (!isLlmConfigured()) { SF.toast("Set the LLM base URL and model name first.", "error"); return; }
-      SF.app.goto(2);
+      if (!isLlmConfigured()) { SF.toast(t("cfg.needLlm"), "error"); return; }
+      $("#dlg-settings").close();
     });
+    $("#dlg-settings").addEventListener("close", readForm);
     SF.on("session-cleared", () => { fillForm(); persist(); });
   }
 
-  SF.config = { init, readForm, fillForm, isLlmConfigured };
+  SF.config = { init, readForm, fillForm, isLlmConfigured, openDialog };
 })(window.SF);

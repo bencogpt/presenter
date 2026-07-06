@@ -1,7 +1,7 @@
 /* ============ ingest.js — file upload & text extraction (spec FR-ING) ============ */
 "use strict";
 (function (SF) {
-  const { $, state } = SF;
+  const { $, state, t } = SF;
   const MAX_FILE = 20 * 1024 * 1024;
   const MIN_PDF_CHARS = 200; // below this we assume a scanned PDF
 
@@ -45,7 +45,7 @@
     const pdf = await window.pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise;
     const parts = [];
     for (let p = 1; p <= pdf.numPages; p++) {
-      setStatus(`Extracting PDF page ${p}/${pdf.numPages}…`, true);
+      setStatus(t("st.pdfPage", { i: p, n: pdf.numPages }), true);
       const page = await pdf.getPage(p);
       const content = await page.getTextContent();
       let line = [], lastY = null;
@@ -61,9 +61,7 @@
       await new Promise((r) => setTimeout(r, 0)); // keep UI responsive (NFR-2)
     }
     const text = parts.join("\n\n").replace(/[ \t]+/g, " ").trim();
-    if (text.length < MIN_PDF_CHARS) {
-      throw new Error("Almost no text found in this PDF — it is probably scanned images. OCR is not supported; export the source as text or docx instead.");
-    }
+    if (text.length < MIN_PDF_CHARS) throw new Error(t("err.scannedPdf"));
     return text;
   }
 
@@ -72,16 +70,16 @@
   /* ---------- intake ---------- */
   async function handleFile(file) {
     if (!file) return;
-    if (file.size > MAX_FILE) { SF.toast(`File is ${SF.fmtBytes(file.size)} — max 20 MB.`, "error"); return; }
+    if (file.size > MAX_FILE) { SF.toast(t("err.fileTooBig", { size: SF.fmtBytes(file.size) }), "error"); return; }
     const ext = (file.name.match(/\.([^.]+)$/) || [, ""])[1].toLowerCase();
-    if (ext === "doc") { SF.toast("Legacy .doc isn't supported. Open it in Word and save as .docx, then retry.", "error", 8000); return; }
+    if (ext === "doc") { SF.toast(t("err.legacyDoc"), "error", 8000); return; }
     try {
-      setStatus(`Reading ${file.name}…`, true);
+      setStatus(t("st.reading", { name: file.name }), true);
       let text;
       if (ext === "docx") text = await extractDocx(file);
       else if (ext === "pdf") text = await extractPdf(file);
       else if (["txt", "md", "markdown"].includes(ext)) text = await extractText(file);
-      else throw new Error("Unsupported file type ." + ext + " — use .docx, .pdf, .md or .txt");
+      else throw new Error(t("err.badType", { ext }));
       acceptText(text, file.name);
     } catch (e) {
       setStatus("");
@@ -91,36 +89,32 @@
 
   function acceptText(text, name) {
     text = SF.cleanText(text).trim();
-    if (!text) { setStatus(""); SF.toast("No text could be extracted from this file.", "error"); return; }
-    state.doc = { name: name || "pasted text", text, chars: text.length, chunked: false };
-    setStatus(`✔ ${name || "Text"} loaded`);
-    renderPreview();
+    if (!text) { setStatus(""); SF.toast(t("err.noText"), "error"); return; }
+    state.doc = { name: name || null, text, chars: text.length, chunked: false };
+    setStatus("");
+    renderDocUI();
     SF.emit("doc-changed");
   }
 
-  function renderPreview() {
-    const wrap = $("#doc-preview-wrap");
+  function renderDocUI() {
     const doc = state.doc;
-    if (!doc) { wrap.hidden = true; $("#btn-to-generate").disabled = true; return; }
-    wrap.hidden = false;
+    $("#doc-chip").hidden = !doc;
+    $("#doc-preview-wrap").hidden = !doc;
+    if (!doc) return;
+    $("#doc-chip-label").textContent = "📄 " + t("src.loaded", { name: doc.name || t("src.pasted"), chars: doc.chars.toLocaleString() });
     $("#doc-preview").value = doc.text;
-    updateStats();
-    $("#btn-to-generate").disabled = false;
+    updateChunkNotice();
   }
 
-  function updateStats() {
+  function updateChunkNotice() {
     const doc = state.doc;
+    if (!doc) return;
     const cap = state.config.charCap;
-    $("#doc-stats").textContent = `— ${doc.chars.toLocaleString()} characters`;
     const notice = $("#chunk-notice");
-    if (doc.chars > cap) {
-      doc.chunked = true;
-      notice.hidden = false;
-      notice.textContent = `This document exceeds the ${cap.toLocaleString()}-character cap. It will be summarized in sections first (map-reduce), then outlined — generation takes several model calls and a bit longer.`;
-    } else {
-      doc.chunked = false;
-      notice.hidden = true;
-    }
+    doc.chunked = doc.chars > cap;
+    notice.hidden = !doc.chunked;
+    if (doc.chunked) notice.textContent = t("src.chunk", { cap: cap.toLocaleString() });
+    $("#doc-chip-label").textContent = "📄 " + t("src.loaded", { name: doc.name || t("src.pasted"), chars: doc.chars.toLocaleString() });
   }
 
   function init() {
@@ -133,19 +127,19 @@
     ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("dragover"); }));
     dz.addEventListener("drop", (e) => handleFile(e.dataTransfer.files[0]));
 
-    $("#btn-use-pasted").addEventListener("click", () => acceptText($("#paste-area").value, "pasted text"));
+    $("#btn-use-pasted").addEventListener("click", () => acceptText($("#paste-area").value, null));
 
     /* user trims/edits the extracted text before sending (FR-ING-4) */
     $("#doc-preview").addEventListener("input", SF.debounce(() => {
       if (!state.doc) return;
       state.doc.text = $("#doc-preview").value;
       state.doc.chars = state.doc.text.length;
-      updateStats();
+      updateChunkNotice();
     }, 300));
 
-    $("#btn-to-generate").addEventListener("click", () => SF.app.goto(3));
-    SF.on("session-cleared", () => { $("#paste-area").value = ""; $("#doc-preview").value = ""; setStatus(""); renderPreview(); });
-    SF.on("config-changed", () => { if (state.doc) updateStats(); });
+    SF.on("session-cleared", () => { $("#paste-area").value = ""; $("#doc-preview").value = ""; setStatus(""); renderDocUI(); });
+    SF.on("config-changed", () => { if (state.doc) updateChunkNotice(); });
+    SF.on("lang-changed", () => { if (state.doc) renderDocUI(); });
   }
 
   SF.ingest = { init };
