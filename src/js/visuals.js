@@ -28,6 +28,7 @@
       }, opts.timeoutS || Math.max(state.config.timeoutS, 180));
       if (!r.ok) {
         if (r.status === 401 || r.status === 403) throw Object.assign(new Error(t("err.imgToken", { status: r.status })), { tokenProblem: true });
+        if (r.status === 404 || r.status === 405 || r.status === 501) throw Object.assign(new Error(t("cfg.noImgApi", { status: r.status })), { notImageApi: true });
         throw Object.assign(new Error(t("err.imgStatus", { status: r.status })), { detail: await r.text().catch(() => "") });
       }
       const ct = r.headers.get("content-type") || "";

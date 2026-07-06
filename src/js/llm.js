@@ -69,8 +69,17 @@
       }, opts.timeoutS);
       if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
       const json = await r.json();
-      const content = json && json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
-      if (typeof content !== "string") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      const msg = json && json.choices && json.choices[0] && json.choices[0].message;
+      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      /* Runtimes differ: content may be a string, null (token budget spent on
+         reasoning), or an array of content parts; some put text in
+         reasoning_content. Be liberal in what we accept. */
+      let content = msg.content;
+      if (Array.isArray(content)) content = content.map((part) => (part && (part.text || part.content)) || "").join("");
+      if (typeof content !== "string" || !content.trim()) {
+        if (typeof msg.reasoning_content === "string" && msg.reasoning_content.trim()) content = msg.reasoning_content;
+        else content = typeof content === "string" ? content : "";
+      }
       return content;
     };
     try {

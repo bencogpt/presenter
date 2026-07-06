@@ -1226,6 +1226,8 @@ window.SF = window.SF || {};
     "cfg.close": "Done",
     "cfg.needLlm": "Set the text model base URL and model name first (⚙ Settings).",
     "cfg.testing": "Testing…", "cfg.testOk": "✔ OK ({ms} ms)", "cfg.reachable": "✔ Endpoint reachable",
+    "cfg.testingImg": "Testing… (generates a tiny test image — can take up to a minute)",
+    "cfg.noImgApi": "No image-generation API at this URL ({status}) — this looks like a text-model endpoint or a wrong base URL.",
     "cfg.testImg": "✔ OK (test image generated)", "cfg.noUrl": "✘ No base URL set",
     "cfg.tokenConfirm": "Store API tokens in this browser's localStorage? Anyone with access to this machine account could read them. Never enable this on a shared computer.",
     "cfg.tokenBtn": "I understand — store tokens",
@@ -1397,6 +1399,8 @@ window.SF = window.SF || {};
     "cfg.close": "סיום",
     "cfg.needLlm": "יש להגדיר תחילה כתובת בסיס ושם מודל למודל הטקסט (⚙ הגדרות).",
     "cfg.testing": "בודק…", "cfg.testOk": "✔ תקין ({ms} מ״ש)", "cfg.reachable": "✔ הכתובת זמינה",
+    "cfg.testingImg": "בודק… (נוצרת תמונת בדיקה קטנה — עשוי לקחת עד דקה)",
+    "cfg.noImgApi": "אין API ליצירת תמונות בכתובת זו ({status}) — נראה כמו כתובת של מודל טקסט או כתובת שגויה.",
     "cfg.testImg": "✔ תקין (נוצרה תמונת בדיקה)", "cfg.noUrl": "✘ לא הוגדרה כתובת בסיס",
     "cfg.tokenConfirm": "לשמור טוקנים ב-localStorage של הדפדפן? כל מי שיש לו גישה לחשבון במחשב זה יוכל לקרוא אותם. לעולם לא במחשב משותף.",
     "cfg.tokenBtn": "אני מבין/ה — שמור טוקנים",
@@ -1654,7 +1658,9 @@ window.SF = window.SF || {};
     readForm();
     try {
       const t0 = performance.now();
-      await SF.llm.chat([{ role: "user", content: "Reply with the single word: pong" }], { maxTokens: 8, timeoutS: 30 });
+      /* generous max_tokens: reasoning models may spend a small budget before
+         emitting any content, which is fine — a valid chat response is the test */
+      await SF.llm.chat([{ role: "user", content: "Reply with the single word: pong" }], { maxTokens: 64, timeoutS: 45 });
       out.textContent = t("cfg.testOk", { ms: Math.round(performance.now() - t0) });
       out.classList.add("ok");
     } catch (e) {
@@ -1665,19 +1671,14 @@ window.SF = window.SF || {};
 
   async function testFlux() {
     const out = $("#flux-test-result");
-    out.className = "test-result"; out.textContent = t("cfg.testing");
+    out.className = "test-result"; out.textContent = t("cfg.testingImg");
     readForm();
     const c = state.config;
     if (!c.fluxBase) { out.textContent = t("cfg.noUrl"); out.classList.add("fail"); return; }
     try {
-      /* cheap probe first (OpenAI-style /v1/models), tiny image as fallback */
-      const r = await SF.llm.rawFetch(c.fluxBase + "/v1/models", {
-        headers: c.fluxToken ? { Authorization: "Bearer " + c.fluxToken } : {},
-      }, 20);
-      if (r.ok) { out.textContent = t("cfg.reachable"); out.classList.add("ok"); return; }
-      if (r.status === 401 || r.status === 403) throw new Error(t("err.imgToken", { status: r.status }));
-      /* fall through to image probe */
-      await SF.visuals.generateImage("test pattern, minimal", { size: "256x256", timeoutS: 60 });
+      /* The only proof this is really an image endpoint is generating an
+         image — a /v1/models probe would also succeed on a text-model URL. */
+      await SF.visuals.generateImage("test pattern, minimal", { size: "256x256", timeoutS: 90 });
       out.textContent = t("cfg.testImg");
       out.classList.add("ok");
     } catch (e) {
@@ -1956,8 +1957,17 @@ window.SF = window.SF || {};
       }, opts.timeoutS);
       if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
       const json = await r.json();
-      const content = json && json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
-      if (typeof content !== "string") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      const msg = json && json.choices && json.choices[0] && json.choices[0].message;
+      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      /* Runtimes differ: content may be a string, null (token budget spent on
+         reasoning), or an array of content parts; some put text in
+         reasoning_content. Be liberal in what we accept. */
+      let content = msg.content;
+      if (Array.isArray(content)) content = content.map((part) => (part && (part.text || part.content)) || "").join("");
+      if (typeof content !== "string" || !content.trim()) {
+        if (typeof msg.reasoning_content === "string" && msg.reasoning_content.trim()) content = msg.reasoning_content;
+        else content = typeof content === "string" ? content : "";
+      }
       return content;
     };
     try {
@@ -2720,6 +2730,7 @@ window.SF = window.SF || {};
       }, opts.timeoutS || Math.max(state.config.timeoutS, 180));
       if (!r.ok) {
         if (r.status === 401 || r.status === 403) throw Object.assign(new Error(t("err.imgToken", { status: r.status })), { tokenProblem: true });
+        if (r.status === 404 || r.status === 405 || r.status === 501) throw Object.assign(new Error(t("cfg.noImgApi", { status: r.status })), { notImageApi: true });
         throw Object.assign(new Error(t("err.imgStatus", { status: r.status })), { detail: await r.text().catch(() => "") });
       }
       const ct = r.headers.get("content-type") || "";

@@ -95,7 +95,9 @@
     readForm();
     try {
       const t0 = performance.now();
-      await SF.llm.chat([{ role: "user", content: "Reply with the single word: pong" }], { maxTokens: 8, timeoutS: 30 });
+      /* generous max_tokens: reasoning models may spend a small budget before
+         emitting any content, which is fine — a valid chat response is the test */
+      await SF.llm.chat([{ role: "user", content: "Reply with the single word: pong" }], { maxTokens: 64, timeoutS: 45 });
       out.textContent = t("cfg.testOk", { ms: Math.round(performance.now() - t0) });
       out.classList.add("ok");
     } catch (e) {
@@ -106,19 +108,14 @@
 
   async function testFlux() {
     const out = $("#flux-test-result");
-    out.className = "test-result"; out.textContent = t("cfg.testing");
+    out.className = "test-result"; out.textContent = t("cfg.testingImg");
     readForm();
     const c = state.config;
     if (!c.fluxBase) { out.textContent = t("cfg.noUrl"); out.classList.add("fail"); return; }
     try {
-      /* cheap probe first (OpenAI-style /v1/models), tiny image as fallback */
-      const r = await SF.llm.rawFetch(c.fluxBase + "/v1/models", {
-        headers: c.fluxToken ? { Authorization: "Bearer " + c.fluxToken } : {},
-      }, 20);
-      if (r.ok) { out.textContent = t("cfg.reachable"); out.classList.add("ok"); return; }
-      if (r.status === 401 || r.status === 403) throw new Error(t("err.imgToken", { status: r.status }));
-      /* fall through to image probe */
-      await SF.visuals.generateImage("test pattern, minimal", { size: "256x256", timeoutS: 60 });
+      /* The only proof this is really an image endpoint is generating an
+         image — a /v1/models probe would also succeed on a text-model URL. */
+      await SF.visuals.generateImage("test pattern, minimal", { size: "256x256", timeoutS: 90 });
       out.textContent = t("cfg.testImg");
       out.classList.add("ok");
     } catch (e) {

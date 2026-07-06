@@ -109,8 +109,13 @@ createServer(async (req, res) => {
       content = JSON.stringify(slide);
     } else if (/pong/i.test(userMsg)) content = "pong";
     else content = "```json\n" + JSON.stringify(OUTLINE) + "\n```"; // fenced on purpose: exercises the parser
+    /* emulate reasoning runtimes: on a small max_tokens budget, content comes
+       back null with the text in reasoning_content (seen on GLM/vLLM) */
+    const message = body.max_tokens && body.max_tokens < 100
+      ? { role: "assistant", content: null, reasoning_content: content }
+      : { role: "assistant", content };
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ id: "mock", object: "chat.completion", model: body.model, choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }] }));
+    return res.end(JSON.stringify({ id: "mock", object: "chat.completion", model: body.model, choices: [{ index: 0, message, finish_reason: "stop" }] }));
   }
   if (req.url === "/v1/images/generations") {
     await readBody(req);

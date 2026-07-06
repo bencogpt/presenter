@@ -184,6 +184,13 @@ try {
   await page.click("#btn-test-llm");
   await page.waitForSelector("#llm-test-result.fail", { timeout: 10000 });
   check("token-rejected message", (await page.textContent("#llm-test-result")).includes("Token rejected"));
+
+  console.log("11. image test rejects a non-image endpoint");
+  await page.fill("#cfg-flux-base", BASE + "/nowhere");
+  await page.click("#btn-test-flux");
+  await page.waitForSelector("#flux-test-result.fail", { timeout: 15000 });
+  const fluxMsg = await page.textContent("#flux-test-result");
+  check("clear 'not an image API' message", fluxMsg.includes("image-generation API"), fluxMsg);
 } finally {
   await browser.close();
   server.kill();
