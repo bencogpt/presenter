@@ -43,6 +43,7 @@
       notes: T(raw.notes, 4000),
       image_prompt: raw.image_prompt ? T(raw.image_prompt, 1500) : null,
       chart_spec: cleanChartSpec(raw.chart_spec),
+      skip: raw.skip === true,
     };
     /* image_prompt and chart_spec are mutually exclusive; chart wins on chart layout */
     if (slide.chart_spec && slide.image_prompt) {
@@ -74,7 +75,7 @@
   }
 
   function blankSlide(layout) {
-    return { id: SF.uid("s"), layout: layout || "bullets", title: "New slide", bullets: [], notes: "", image_prompt: null, chart_spec: null };
+    return { id: SF.uid("s"), layout: layout || "bullets", title: "New slide", bullets: [], notes: "", image_prompt: null, chart_spec: null, skip: false };
   }
 
   SF.schema = { validateOutline, cleanChartSpec, blankSlide, LAYOUTS, CHART_TYPES };

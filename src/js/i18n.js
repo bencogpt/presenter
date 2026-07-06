@@ -51,6 +51,9 @@
     "sl.deckTitle": "Deck title", "sl.deckSubtitle": "Subtitle",
     "sl.add": "＋ Add slide",
     "sl.titlePh": "Slide title",
+    "opt.transition": "Slide transition",
+    "opt.tr.slide": "Slide", "opt.tr.fade": "Fade", "opt.tr.convex": "Convex", "opt.tr.zoom": "Zoom", "opt.tr.none": "None",
+    "opt.fragments": "Reveal bullets one by one (fragments)",
 
     /* status */
     "st.sending": "Sending {n} characters to model {model}…",
@@ -64,7 +67,7 @@
     /* preview */
     "pv.emptyTitle": "Your presentation will appear here",
     "pv.emptyHint": "Load a document on the side panel, then generate the outline. Every edit updates this preview live.",
-    "pv.keys": "Present mode: F fullscreen · S speaker notes · ESC overview · arrows to navigate",
+    "pv.keys": "Present mode: F fullscreen · S speaker notes · ESC overview · Alt+click zoom · Ctrl+Shift+F search · arrows to navigate",
 
     /* editor cards */
     "layout.title": "Title", "layout.bullets": "Bullets", "layout.bullets_image": "Bullets + image",
@@ -84,6 +87,8 @@
     "card.chartTitlePh": "Chart title",
     "card.series": "Series ╲ Labels", "card.addCol": "＋ col", "card.addSeries": "＋ series", "card.rmSeries": "Remove series",
     "card.notes": "Speaker notes", "card.notesPh": "Speaker notes (only you see these)",
+    "card.hide": "Hide slide (kept in the project, skipped when presenting)",
+    "card.show": "Show slide again",
     "card.regenDone": "Slide regenerated.", "card.regenBusy": "Regenerating slide…",
 
     /* visuals dialog */
@@ -106,6 +111,7 @@
     "ex.deckHint": "One self-contained file. Opens on any offline machine, straight from a USB stick.",
     "ex.liveCharts": "Embed live interactive charts (default: charts baked to PNG)",
     "ex.downscale": "Downscale images to ≤1920px JPEG (smaller file)",
+    "ex.kiosk": "Auto-advance in a loop (kiosk mode), seconds per slide:",
     "ex.sizeWarn": "Estimated export size {size} (>50 MB). Consider image downscaling.",
     "ex.download": "⬇ Download presentation.html",
     "ex.project": "Project file (.json)",
@@ -222,6 +228,9 @@
     "sl.deckTitle": "כותרת המצגת", "sl.deckSubtitle": "כותרת משנה",
     "sl.add": "＋ הוסף שקף",
     "sl.titlePh": "כותרת השקף",
+    "opt.transition": "מעבר בין שקפים",
+    "opt.tr.slide": "החלקה", "opt.tr.fade": "עמעום", "opt.tr.convex": "קמור", "opt.tr.zoom": "זום", "opt.tr.none": "ללא",
+    "opt.fragments": "חשיפת נקודות אחת-אחת",
 
     "st.sending": "שולח {n} תווים למודל {model}…",
     "st.summarizing": "המסמך מעל התקרה — מסכם חלק {i}/{n}…",
@@ -233,7 +242,7 @@
 
     "pv.emptyTitle": "המצגת שלכם תופיע כאן",
     "pv.emptyHint": "טענו מסמך בלוח הצד וצרו מתאר. כל עריכה מתעדכנת בתצוגה המקדימה באופן מיידי.",
-    "pv.keys": "מצב הצגה: F מסך מלא · S הערות דובר · ESC סקירה · חצים לניווט",
+    "pv.keys": "מצב הצגה: F מסך מלא · S הערות דובר · ESC סקירה · Alt+לחיצה זום · Ctrl+Shift+F חיפוש · חצים לניווט",
 
     "layout.title": "כותרת", "layout.bullets": "נקודות", "layout.bullets_image": "נקודות + תמונה",
     "layout.image_full": "תמונה מלאה", "layout.chart": "גרף", "layout.two_column": "שתי עמודות",
@@ -252,6 +261,8 @@
     "card.chartTitlePh": "כותרת הגרף",
     "card.series": "סדרה ╲ תוויות", "card.addCol": "＋ עמודה", "card.addSeries": "＋ סדרה", "card.rmSeries": "הסרת סדרה",
     "card.notes": "הערות דובר", "card.notesPh": "הערות דובר (רק אתם רואים אותן)",
+    "card.hide": "הסתרת שקף (נשמר בפרויקט, מדולג בהצגה)",
+    "card.show": "הצגת השקף שוב",
     "card.regenDone": "השקף נוצר מחדש.", "card.regenBusy": "יוצר שקף מחדש…",
 
     "vis.title": "יצירת תמונות",
@@ -272,6 +283,7 @@
     "ex.deckHint": "קובץ אחד עצמאי לחלוטין. נפתח בכל מחשב לא מקוון, ישירות מהחסן נייד.",
     "ex.liveCharts": "הטמעת גרפים אינטראקטיביים (ברירת מחדל: גרפים כתמונת PNG)",
     "ex.downscale": "הקטנת תמונות ל-JPEG עד ‎1920px (קובץ קטן יותר)",
+    "ex.kiosk": "התקדמות אוטומטית בלולאה (מצב קיוסק), שניות לשקף:",
     "ex.sizeWarn": "גודל ייצוא משוער {size} (מעל 50 MB). מומלץ להקטין תמונות.",
     "ex.download": "⬇ הורדת presentation.html",
     "ex.project": "קובץ פרויקט (.json)",

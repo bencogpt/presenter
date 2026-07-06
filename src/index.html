@@ -151,6 +151,16 @@ window.DEFAULT_CONFIG = {
       <div class="deck-meta">
         <label><span data-i18n="sl.deckTitle">Deck title</span> <input type="text" id="deck-title"></label>
         <label><span data-i18n="sl.deckSubtitle">Subtitle</span> <input type="text" id="deck-subtitle"></label>
+        <label><span data-i18n="opt.transition">Slide transition</span>
+          <select id="deck-transition">
+            <option value="slide" data-i18n="opt.tr.slide">Slide</option>
+            <option value="fade" data-i18n="opt.tr.fade">Fade</option>
+            <option value="convex" data-i18n="opt.tr.convex">Convex</option>
+            <option value="zoom" data-i18n="opt.tr.zoom">Zoom</option>
+            <option value="none" data-i18n="opt.tr.none">None</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="deck-fragments"> <span data-i18n="opt.fragments">Reveal bullets one by one</span></label>
       </div>
       <div id="slide-cards" aria-label="Slide list"></div>
       <button id="btn-add-slide" class="btn btn-small" data-i18n="sl.add">＋ Add slide</button>
@@ -240,6 +250,8 @@ window.DEFAULT_CONFIG = {
     <p class="muted small" data-i18n="ex.deckHint"></p>
     <label class="check"><input type="checkbox" id="exp-live-charts"> <span data-i18n="ex.liveCharts"></span></label>
     <label class="check"><input type="checkbox" id="exp-downscale"> <span data-i18n="ex.downscale"></span></label>
+    <label class="check"><input type="checkbox" id="exp-kiosk"> <span data-i18n="ex.kiosk">Auto-advance in a loop (kiosk), seconds:</span>
+      <input type="number" id="exp-kiosk-secs" value="8" min="2" max="120" class="kiosk-secs"></label>
     <div id="exp-size-warning" class="banner banner-warn small" hidden></div>
     <button id="btn-export-deck" class="btn btn-primary" data-i18n="ex.download">⬇ Download presentation.html</button>
   </fieldset>
@@ -288,6 +300,8 @@ window.DEFAULT_CONFIG = {
 <!--@b64 id="vendor-pdfjs-worker" src="node_modules/pdfjs-dist/build/pdf.worker.min.js"-->
 <!--@js id="vendor-reveal" src="node_modules/reveal.js/dist/reveal.js"-->
 <!--@js id="vendor-reveal-notes" src="node_modules/reveal.js/plugin/notes/notes.js"-->
+<!--@js id="vendor-reveal-zoom" src="node_modules/reveal.js/plugin/zoom/zoom.js"-->
+<!--@js id="vendor-reveal-search" src="node_modules/reveal.js/plugin/search/search.js"-->
 
 <!-- Application modules -->
 <!--@js id="app-util" src="src/js/util.js"-->

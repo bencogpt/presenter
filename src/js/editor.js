@@ -50,11 +50,18 @@
     handle.addEventListener("mousedown", () => card.setAttribute("draggable", "true"));
     card.addEventListener("dragend", () => card.setAttribute("draggable", "false"));
 
+    if (slide.skip) card.classList.add("skipped");
     const head = el("div", { class: "slide-card-head" }, [
       handle,
       el("span", { class: "slide-num", text: String(idx + 1) }),
       layoutSel,
       el("span", { class: "spacer" }),
+      el("button", { class: "mini", text: slide.skip ? "🚫" : "👁", title: t(slide.skip ? "card.show" : "card.hide"), onclick: (e) => {
+        e.stopPropagation();
+        SF.history.snapshot();
+        slide.skip = !slide.skip;
+        structuralChange();
+      } }),
       el("button", { class: "mini", text: t("card.regen"), title: t("card.regenTitle"), onclick: () => regenerate(slide, card) }),
       el("button", { class: "mini", text: "⧉", title: t("card.dup"), onclick: () => {
         SF.history.snapshot();
@@ -270,6 +277,14 @@
       state.outline.slides.push(SF.schema.blankSlide());
       structuralChange();
     });
+    $("#deck-transition").addEventListener("change", (e) => {
+      state.deckOpts.transition = e.target.value;
+      edited();
+    });
+    $("#deck-fragments").addEventListener("change", (e) => {
+      state.deckOpts.fragments = e.target.checked;
+      edited();
+    });
     $("#btn-undo").addEventListener("click", () => { SF.history.undo(); });
     $("#btn-redo").addEventListener("click", () => { SF.history.redo(); });
     document.addEventListener("keydown", (e) => {
@@ -277,7 +292,11 @@
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); SF.history.undo(); }
       if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); SF.history.redo(); }
     });
-    SF.on("outline-replaced", () => { renderCards(); edited(); });
+    SF.on("outline-replaced", () => {
+      $("#deck-transition").value = state.deckOpts.transition;
+      $("#deck-fragments").checked = state.deckOpts.fragments;
+      renderCards(); edited();
+    });
     SF.on("undo-changed", updateUndoButtons);
     SF.on("lang-changed", renderCards);
   }

@@ -19,6 +19,7 @@
     outline: null,    // schema §5.1 (validated)
     assets: {},       // slideId -> { kind: "image"|"user_image", mime, b64 }
     theme: "corporate",
+    deckOpts: { transition: "slide", fragments: false },
     approved: false,
     version: (document.querySelector('meta[name="sf-version"]') || {}).content || "dev",
   };

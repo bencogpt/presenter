@@ -10,11 +10,12 @@
   let deck = null;
 
   /* ---------- slide DOM construction (all content sanitized, spec §7.3) ---------- */
-  function bulletsList(bullets, dirAuto) {
+  function bulletsList(bullets, dirAuto, fragments) {
     const ul = el("ul");
     for (const b of bullets) {
       const li = el("li");
       if (dirAuto) li.setAttribute("dir", "auto");
+      if (fragments) li.classList.add("fragment");
       li.appendChild(SF.richTextNode(b));
       ul.appendChild(li);
     }
@@ -35,6 +36,8 @@
   function buildSlideSection(slide, outline, opts) {
     opts = opts || {};
     const sec = el("section", { class: `sf-slide sf-l-${slide.layout}`, "data-sf-id": slide.id, dir: "auto" });
+    if (slide.skip) sec.setAttribute("data-visibility", "hidden"); // reveal.js skips it in navigation
+    const frag = !!(state.deckOpts.fragments && !opts.noFragments);
     const H = (tag, text) => { const h = el(tag, { dir: "auto" }); h.appendChild(SF.richTextNode(text)); return h; };
 
     switch (slide.layout) {
@@ -66,7 +69,7 @@
       case "bullets_image": {
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
-        body.appendChild(bulletsList(slide.bullets, true));
+        body.appendChild(bulletsList(slide.bullets, true, frag));
         const box = el("div", { class: "sf-img-box" });
         const img = imgNode(slide.id, slide.image_prompt);
         if (img) box.appendChild(img);
@@ -94,15 +97,15 @@
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
         const half = Math.ceil(slide.bullets.length / 2);
-        body.appendChild(bulletsList(slide.bullets.slice(0, half), true));
-        body.appendChild(bulletsList(slide.bullets.slice(half), true));
+        body.appendChild(bulletsList(slide.bullets.slice(0, half), true, frag));
+        body.appendChild(bulletsList(slide.bullets.slice(half), true, frag));
         sec.appendChild(body);
         break;
       }
       default: { // bullets
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
-        body.appendChild(bulletsList(slide.bullets, true));
+        body.appendChild(bulletsList(slide.bullets, true, frag));
         sec.appendChild(body);
       }
     }
@@ -148,7 +151,8 @@
         hash: false, center: false,
         slideNumber: "c/t",
         keyboardCondition: "focused",
-        plugins: [window.RevealNotes],
+        transition: state.deckOpts.transition,
+        plugins: [window.RevealNotes, window.RevealZoom, window.RevealSearch],
       });
       await deck.initialize();
       deck.on("slidechanged", (ev) => {
@@ -156,8 +160,9 @@
         if (id) SF.editor.markActive(id);
       });
     } else {
+      deck.configure({ transition: state.deckOpts.transition });
       deck.sync();
-      deck.slide(Math.min(keepIndex, deck.getTotalSlides() - 1));
+      deck.slide(Math.min(keepIndex, Math.max(0, deck.getTotalSlides() - 1)));
     }
     applyTheme();
     renderVisibleCharts();

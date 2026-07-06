@@ -52,11 +52,14 @@
 
     const title = SF.escapeHtml(o.title || "Presentation");
     const version = SF.escapeHtml(state.version);
+    const kiosk = opts.kioskSecs > 0;
     const initJs = scriptSafe([
       "var deck = new Reveal({",
       "  width: 1280, height: 720, margin: 0.02, minScale: 0.05, maxScale: 4,",
       "  hash: true, center: false, slideNumber: 'c/t', controls: true, progress: true,",
-      "  plugins: [RevealNotes]",
+      "  transition: " + JSON.stringify(state.deckOpts.transition) + ",",
+      kiosk ? "  autoSlide: " + (opts.kioskSecs * 1000) + ", loop: true, autoSlideStoppable: true," : "",
+      "  plugins: [RevealNotes, RevealZoom, RevealSearch]",
       "});",
       "deck.initialize().then(function () {",
       "  document.querySelector('.reveal-viewport').setAttribute('data-sf-theme', " + JSON.stringify(state.theme) + ");",
@@ -97,6 +100,8 @@
       `<div class="reveal"><div class="slides">${slidesHtml}</div></div>`,
       `<script>${scriptSafe(grab("vendor-reveal"))}<\/script>`,
       `<script>${scriptSafe(grab("vendor-reveal-notes"))}<\/script>`,
+      `<script>${scriptSafe(grab("vendor-reveal-zoom"))}<\/script>`,
+      `<script>${scriptSafe(grab("vendor-reveal-search"))}<\/script>`,
       opts.liveCharts ? `<script>${scriptSafe(grab("vendor-chart"))}<\/script>` : "",
       chartHelper ? `<script>${chartHelper}<\/script>` : "",
       `<script>${initJs}<\/script>`,
@@ -117,6 +122,7 @@
       const html = await buildDeckHtml({
         liveCharts: $("#exp-live-charts").checked,
         downscale: $("#exp-downscale").checked,
+        kioskSecs: $("#exp-kiosk").checked ? Math.max(2, parseInt($("#exp-kiosk-secs").value, 10) || 8) : 0,
       });
       const safeName = (state.outline.title || "presentation").replace(/[^\wÀ-￿ -]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "presentation";
       SF.downloadFile(safeName + ".html", html, "text/html;charset=utf-8");
@@ -136,6 +142,7 @@
       appVersion: state.version,
       outline: state.outline,
       theme: state.theme,
+      deckOpts: state.deckOpts,
       assets: state.assets,
       gen: state.gen,
       config: { llm_base: c.llmBase, llm_model: c.llmModel, flux_base: c.fluxBase, flux_model: c.fluxModel, image_size: c.imageSize },
@@ -163,6 +170,11 @@
       state.outline = outline;
       state.assets = assets;
       state.theme = ["corporate", "dark", "contrast"].includes(json.theme) ? json.theme : "corporate";
+      const dOpts = json.deckOpts && typeof json.deckOpts === "object" ? json.deckOpts : {};
+      state.deckOpts = {
+        transition: ["slide", "fade", "convex", "zoom", "none"].includes(dOpts.transition) ? dOpts.transition : "slide",
+        fragments: dOpts.fragments === true,
+      };
       if (json.config && typeof json.config === "object") {
         const c = state.config;
         if (!c.llmBase && json.config.llm_base) c.llmBase = SF.cleanText(json.config.llm_base, 300);
@@ -188,8 +200,9 @@
     const root = $("#print-root");
     root.textContent = "";
     const holder = el("div", { class: "sf-themed", "data-sf-theme": state.theme });
-    const frag = SF.render.buildAllSections({ forExport: true });
+    const frag = SF.render.buildAllSections({ forExport: true, noFragments: true });
     for (const sec of Array.from(frag.children)) {
+      if (sec.getAttribute("data-visibility") === "hidden") continue;
       const page = el("div", { class: "print-slide sf-themed reveal", "data-sf-theme": state.theme });
       sec.style.display = "block";
       page.appendChild(sec);

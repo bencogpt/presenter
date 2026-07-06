@@ -100,9 +100,20 @@ try {
   }, { timeout: 10000 });
   check("per-slide regeneration", true);
 
+  console.log("5b. reveal.js features: transition, fragments, hide slide");
+  await page.selectOption("#deck-transition", "fade");
+  await page.check("#deck-fragments");
+  await page.waitForFunction(() => document.querySelectorAll("#reveal-slides li.fragment").length > 0, { timeout: 5000 });
+  check("fragments applied in live preview", true);
+  await page.locator(".slide-card").nth(4).locator('button:has-text("👁")').click();
+  await page.waitForTimeout(800);
+  check("slide card marked skipped", await page.locator(".slide-card").nth(4).evaluate((n) => n.classList.contains("skipped")));
+  check("preview skips hidden slide", await page.evaluate(() => !!document.querySelector('#reveal-slides section[data-visibility="hidden"]')));
+
   console.log("6. export dialog: deck + project");
   await page.click("#btn-export");
   await page.waitForSelector("#dlg-export[open]");
+  await page.check("#exp-kiosk");
   const [download] = await Promise.all([page.waitForEvent("download"), page.click("#btn-export-deck")]);
   const deckPath = join(tmp, "deck.html");
   await download.saveAs(deckPath);
@@ -113,6 +124,11 @@ try {
   check("chart baked to PNG", deckHtml.includes('class="sf-chart-png"') && deckHtml.includes("data:image/png;base64"));
   check("flux image embedded", deckHtml.includes("data:image/png;base64,iVBOR"));
   check("no token anywhere in deck", !deckHtml.includes("test-token"));
+  check("transition setting exported", deckHtml.includes('transition: "fade"'));
+  check("fragments exported", deckHtml.includes('class="fragment"'));
+  check("hidden slide exported as data-visibility=hidden", deckHtml.includes('data-visibility="hidden"'));
+  check("kiosk auto-advance + loop exported", deckHtml.includes("autoSlide: 8000") && deckHtml.includes("loop: true"));
+  check("zoom + search plugins embedded", deckHtml.includes("RevealZoom") && deckHtml.includes("RevealSearch"));
 
   const [projDl] = await Promise.all([page.waitForEvent("download"), page.click("#btn-export-project")]);
   const projPath = join(tmp, "project.json");
@@ -144,6 +160,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".slide-card").length === 5, { timeout: 10000 });
   check("project import restores slides", true);
   check("export dialog closed after import", !(await page.isVisible("#dlg-export")));
+  check("deck options restored from project", (await page.inputValue("#deck-transition")) === "fade" && (await page.isChecked("#deck-fragments")));
 
   console.log("9. Hebrew UI (RTL)");
   await page.click("#btn-lang");

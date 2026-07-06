@@ -39,8 +39,16 @@ configuration is not part of the flow — it lives in the **⚙ Settings dialog*
    per-slide regenerate. Clicking a card jumps the preview to that slide.
 4. **✦ Images** (header) opens the image-generation dialog (per-slide
    accept / retry / skip, or upload your own). **▶ Present** goes fullscreen
-   (`F`/`S`/`ESC` reveal.js keys). **⬇ Export** downloads the standalone
+   (`F`/`S`/`ESC` reveal.js keys, plus Alt+click zoom and Ctrl+Shift+F
+   in-deck search). **⬇ Export** downloads the standalone
    `presentation.html`, a token-free project file, or prints to PDF.
+
+**Deck options** (under "3 · Slides"): slide transition (slide / fade /
+convex / zoom / none) and "reveal bullets one by one" (reveal.js fragments) —
+both apply to the live preview and the export. Each slide card has a 👁
+toggle to hide a slide without deleting it (kept in the project, skipped
+when presenting/exporting/printing). The export dialog adds a kiosk mode:
+auto-advance every N seconds in a loop, for lobby/booth screens.
 
 **UI languages:** English and Hebrew (עברית) — the header toggle switches
 instantly, and the Hebrew UI is fully right-to-left. The default follows the
