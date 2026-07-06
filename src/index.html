@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  ============================================================
+  SlideForge Offline — air-gapped HTML presentation generator
+  Single-file build. Version: __VERSION__ (built __BUILD_DATE__)
+  Regenerate with: node build/build.mjs   (see BUILD.md)
+  ============================================================
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ADMIN NOTE: connect-src below is intentionally broad (endpoints are user-configurable).
+     To lock this file to your model routes, replace "https: http:" with your exact origins,
+     e.g. "https://llm.apps.internal https://flux.apps.internal", then redistribute. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; worker-src blob:; connect-src https: http:; form-action 'none'; base-uri 'none'">
+<title>SlideForge Offline</title>
+
+<script id="default-config">
+/* ============================================================
+ * DEFAULT_CONFIG — ADMIN-EDITABLE BLOCK
+ * Distribute this file with your internal endpoint URLs baked in.
+ * URLs and model names ONLY — NEVER put API tokens in this file.
+ * ============================================================ */
+window.DEFAULT_CONFIG = {
+  llmBase: "",              // e.g. "https://llm.apps.internal.example"  (no trailing /v1)
+  llmModel: "",             // e.g. "glm-4-9b-chat" or "gemma-2-27b-it"
+  fluxBase: "",             // e.g. "https://flux.apps.internal.example"
+  fluxModel: "flux2",
+  imageSize: "1344x768",
+  timeoutS: 120,            // request timeout, seconds
+  maxTokens: 4096,          // max output tokens for outline generation
+  charCap: 60000,           // document char cap before chunked summarization kicks in
+  stylePrefix: "clean corporate illustration, presentation graphic, flat design, no text in image"
+};
+</script>
+
+<!--@css id="font-css" font-inline-->
+<!--@css id="app-css" src="src/css/app.css"-->
+<!--@css id="vendor-reveal-css" src="node_modules/reveal.js/dist/reveal.css"-->
+<!--@css id="deck-css" src="src/css/deck.css"-->
+</head>
+<body data-app-theme="light">
+
+<div id="unsupported-banner" class="banner banner-error" hidden>
+  This browser is missing required features (fetch, FileReader, structuredClone, canvas).
+  Please use Chromium ≥ 110 or Firefox ≥ 110.
+</div>
+<div id="http-warning" class="banner banner-warn" hidden>
+  ⚠️ One or more endpoints use plain <code>http://</code> — traffic is unencrypted. Acceptable only in isolated lab setups.
+</div>
+
+<header id="app-header">
+  <div class="brand">
+    <span class="brand-mark">▤</span> <strong>SlideForge</strong> <span class="muted">Offline</span>
+  </div>
+  <nav id="stepbar" aria-label="Wizard steps">
+    <button class="step" data-step="1" title="Setup">1<span> Setup</span></button>
+    <button class="step" data-step="2">2<span> Upload</span></button>
+    <button class="step" data-step="3">3<span> Outline</span></button>
+    <button class="step" data-step="4">4<span> Review</span></button>
+    <button class="step" data-step="5">5<span> Visuals</span></button>
+    <button class="step" data-step="6">6<span> Present</span></button>
+    <button class="step" data-step="7">7<span> Export</span></button>
+  </nav>
+  <div class="header-actions">
+    <button id="btn-open-settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+    <button id="btn-clear-session" class="icon-btn danger" title="Clear session (wipes tokens, document, outline, assets)">🗑</button>
+  </div>
+</header>
+
+<main id="app-main">
+
+  <!-- ============ STEP 1: SETUP ============ -->
+  <section class="panel" id="panel-1" hidden>
+    <h1>Connect to your internal AI services</h1>
+    <p class="muted">This tool only ever talks to the two endpoints you configure below. Documents go to the LLM endpoint; image prompts go to the image endpoint. Nothing else, ever.</p>
+
+    <div class="settings-grid">
+      <fieldset>
+        <legend>Text model (OpenAI-compatible)</legend>
+        <label>Base URL <input type="url" id="cfg-llm-base" placeholder="https://llm.apps.internal" autocomplete="off" spellcheck="false"></label>
+        <label>Model name <input type="text" id="cfg-llm-model" placeholder="glm-4-9b-chat" autocomplete="off" spellcheck="false"></label>
+        <label>API token <input type="password" id="cfg-llm-token" placeholder="Bearer token" autocomplete="off"></label>
+        <div class="row">
+          <button id="btn-test-llm" class="btn">Test connection</button>
+          <span id="llm-test-result" class="test-result" role="status"></span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Image model (Flux2) — optional</legend>
+        <label>Base URL <input type="url" id="cfg-flux-base" placeholder="https://flux.apps.internal" autocomplete="off" spellcheck="false"></label>
+        <label>Model name <input type="text" id="cfg-flux-model" placeholder="flux2" autocomplete="off" spellcheck="false"></label>
+        <label>API token <input type="password" id="cfg-flux-token" placeholder="Bearer token" autocomplete="off"></label>
+        <div class="row">
+          <button id="btn-test-flux" class="btn">Test connection</button>
+          <span id="flux-test-result" class="test-result" role="status"></span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Advanced</legend>
+        <label>Request timeout (seconds) <input type="number" id="cfg-timeout" min="10" max="600" value="120"></label>
+        <label>Max output tokens <input type="number" id="cfg-max-tokens" min="256" max="32768" value="4096"></label>
+        <label>Document character cap <input type="number" id="cfg-char-cap" min="5000" max="500000" value="60000"></label>
+        <label>Image size <input type="text" id="cfg-image-size" value="1344x768" spellcheck="false"></label>
+        <label>Image style prefix <textarea id="cfg-style-prefix" rows="2"></textarea></label>
+        <details>
+          <summary>Prompt template (advanced)</summary>
+          <label>Outline system prompt <textarea id="cfg-system-prompt" rows="8" spellcheck="false"></textarea></label>
+          <button id="btn-reset-prompt" class="btn btn-small">Reset to default</button>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Persistence (shared computer?)</legend>
+        <label class="check"><input type="checkbox" id="cfg-persist"> Remember settings on this machine <span class="muted">(URLs &amp; model names — stored in this browser)</span></label>
+        <label class="check indent"><input type="checkbox" id="cfg-persist-tokens" disabled> Also remember API tokens <strong class="warn-text">⚠ never enable on a shared computer</strong></label>
+        <p class="muted small">By default tokens live only in memory and vanish when you close this tab.</p>
+      </fieldset>
+    </div>
+
+    <div class="panel-nav">
+      <span></span>
+      <button id="btn-setup-done" class="btn btn-primary">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2: UPLOAD ============ -->
+  <section class="panel" id="panel-2" hidden>
+    <h1>Add your source document</h1>
+    <div id="dropzone" tabindex="0" role="button" aria-label="Upload a document. Click or drop a file.">
+      <p><strong>Drop a file here</strong> or click to choose</p>
+      <p class="muted">.docx · .pdf · .md · .txt — up to 20&nbsp;MB</p>
+      <input type="file" id="file-input" accept=".docx,.pdf,.md,.txt,.markdown,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    </div>
+    <details id="paste-fallback">
+      <summary>…or paste text instead</summary>
+      <textarea id="paste-area" rows="8" placeholder="Paste your document text here"></textarea>
+      <button id="btn-use-pasted" class="btn">Use pasted text</button>
+    </details>
+
+    <div id="extract-status" class="status-line" role="status" aria-live="polite"></div>
+
+    <div id="doc-preview-wrap" hidden>
+      <h2>Extracted text <span id="doc-stats" class="muted"></span></h2>
+      <p class="muted">Review and trim before sending to the model — remove anything irrelevant or sensitive.</p>
+      <textarea id="doc-preview" rows="14" spellcheck="false"></textarea>
+      <div id="chunk-notice" class="banner banner-warn" hidden></div>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="1">← Back</button>
+      <button id="btn-to-generate" class="btn btn-primary" disabled>Continue →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3: GENERATE ============ -->
+  <section class="panel" id="panel-3" hidden>
+    <h1>Generate the outline</h1>
+    <div class="gen-controls">
+      <label>Slides
+        <select id="gen-count">
+          <option value="auto">Auto</option>
+        </select>
+      </label>
+      <label>Tone
+        <select id="gen-tone">
+          <option value="business">Business</option>
+          <option value="technical">Technical</option>
+          <option value="educational">Educational</option>
+        </select>
+      </label>
+      <label>Language
+        <select id="gen-lang">
+          <option value="auto">Same as document</option>
+          <option value="en">English</option>
+          <option value="he">Hebrew</option>
+          <option value="ar">Arabic</option>
+          <option value="de">German</option>
+          <option value="fr">French</option>
+          <option value="es">Spanish</option>
+          <option value="ru">Russian</option>
+        </select>
+      </label>
+      <label>Visuals
+        <select id="gen-visuals">
+          <option value="light">Light</option>
+          <option value="none">None</option>
+          <option value="rich">Rich</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <button id="btn-generate" class="btn btn-primary btn-big">✦ Generate outline</button>
+      <button id="btn-cancel-generate" class="btn" hidden>Cancel</button>
+    </div>
+
+    <div id="gen-status" class="status-line" role="status" aria-live="polite"></div>
+    <div id="gen-error" class="banner banner-error" hidden>
+      <div id="gen-error-msg"></div>
+      <details><summary>Details (admin)</summary><pre id="gen-error-detail"></pre></details>
+    </div>
+
+    <div id="json-fix-wrap" hidden>
+      <h2>The model returned invalid JSON</h2>
+      <p class="muted">You can fix it by hand below, then press “Parse again”.</p>
+      <textarea id="json-fix-area" rows="16" spellcheck="false"></textarea>
+      <button id="btn-json-fix" class="btn btn-primary">Parse again</button>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="2">← Back</button>
+      <span></span>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4: REVIEW & EDIT ============ -->
+  <section class="panel panel-wide" id="panel-4" hidden>
+    <div class="editor-toolbar">
+      <h1 id="outline-title-display">Review &amp; edit</h1>
+      <div class="row">
+        <button id="btn-undo" class="btn btn-small" title="Undo (Ctrl+Z)">↶ Undo</button>
+        <button id="btn-redo" class="btn btn-small" title="Redo (Ctrl+Y)">↷ Redo</button>
+        <button id="btn-add-slide" class="btn btn-small">＋ Add slide</button>
+        <label class="inline-label">Theme
+          <select id="theme-select">
+            <option value="corporate">Light corporate</option>
+            <option value="dark">Dark</option>
+            <option value="contrast">High contrast</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="deck-meta">
+      <label>Deck title <input type="text" id="deck-title"></label>
+      <label>Subtitle <input type="text" id="deck-subtitle"></label>
+    </div>
+
+    <div id="slide-cards" aria-label="Slide list"></div>
+
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="3">← Back</button>
+      <button id="btn-approve" class="btn btn-primary btn-big">✔ Approve outline → Build presentation</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 5: VISUALS ============ -->
+  <section class="panel panel-wide" id="panel-5" hidden>
+    <h1>Generate visuals <span class="muted">(optional)</span></h1>
+    <p class="muted">Images are generated one at a time by your internal Flux2 service. Charts are always rendered locally by Chart.js — never by the image model.</p>
+    <div class="row">
+      <button id="btn-gen-all-images" class="btn btn-primary">✦ Generate all images</button>
+      <button id="btn-stop-images" class="btn" hidden>Stop</button>
+      <span id="img-progress" class="status-line" role="status" aria-live="polite"></span>
+    </div>
+    <div id="visuals-list"></div>
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="4">← Back to editor</button>
+      <button id="btn-skip-visuals" class="btn btn-primary">Continue → <span class="muted">(build without missing images)</span></button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 6: PREVIEW / PRESENT ============ -->
+  <section class="panel panel-wide" id="panel-6" hidden>
+    <div class="editor-toolbar">
+      <h1>Preview</h1>
+      <div class="row">
+        <label class="inline-label">Theme
+          <select id="theme-select-2">
+            <option value="corporate">Light corporate</option>
+            <option value="dark">Dark</option>
+            <option value="contrast">High contrast</option>
+          </select>
+        </label>
+        <button id="btn-present" class="btn btn-primary">▶ Present (F = fullscreen)</button>
+      </div>
+    </div>
+    <div id="preview-frame">
+      <div class="reveal" id="reveal-root"><div class="slides" id="reveal-slides"></div></div>
+    </div>
+    <p class="muted small">In present mode: <kbd>F</kbd> fullscreen · <kbd>S</kbd> speaker notes · <kbd>ESC</kbd>/<kbd>O</kbd> overview · <kbd>?</kbd> help · arrows to navigate.</p>
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="4">← Back to editor</button>
+      <button class="btn btn-primary" data-goto="7">Continue to export →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 7: EXPORT ============ -->
+  <section class="panel" id="panel-7" hidden>
+    <h1>Export</h1>
+
+    <div class="export-grid">
+      <fieldset>
+        <legend>Standalone presentation (.html)</legend>
+        <p class="muted">One self-contained file. Opens on any offline machine, straight from a USB stick.</p>
+        <label class="check"><input type="checkbox" id="exp-live-charts"> Embed live interactive charts <span class="muted">(default: charts baked to PNG for maximum portability)</span></label>
+        <label class="check"><input type="checkbox" id="exp-downscale"> Downscale images to ≤1920px JPEG <span class="muted">(smaller file)</span></label>
+        <div id="exp-size-warning" class="banner banner-warn" hidden></div>
+        <button id="btn-export-deck" class="btn btn-primary btn-big">⬇ Download presentation.html</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Project file (.json)</legend>
+        <p class="muted">Save your work to resume later or hand off to a colleague. Contains outline, settings and generated assets — <strong>never tokens</strong>.</p>
+        <button id="btn-export-project" class="btn">⬇ Save project.json</button>
+        <hr>
+        <label class="check">Resume from a project file:</label>
+        <input type="file" id="project-input" accept=".json,application/json">
+      </fieldset>
+
+      <fieldset>
+        <legend>PDF</legend>
+        <p class="muted">Uses your browser's print dialog — choose “Save as PDF”, enable background graphics, landscape.</p>
+        <button id="btn-print-pdf" class="btn">🖨 Print / Save as PDF</button>
+      </fieldset>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-back" data-goto="6">← Back</button>
+      <span></span>
+    </div>
+  </section>
+</main>
+
+<div id="print-root" aria-hidden="true"></div>
+
+<footer id="app-footer">
+  <span>SlideForge Offline v__VERSION__ · built __BUILD_DATE__ · air-gapped: no external calls except your two configured endpoints</span>
+</footer>
+
+<div id="toast-region" aria-live="polite"></div>
+<div id="modal-backdrop" hidden>
+  <div id="modal" role="dialog" aria-modal="true">
+    <div id="modal-body"></div>
+    <div id="modal-buttons" class="row"></div>
+  </div>
+</div>
+
+<!-- Vendored libraries (inlined at build time) -->
+<!--@js id="vendor-purify" src="node_modules/dompurify/dist/purify.min.js"-->
+<!--@js id="vendor-chart" src="node_modules/chart.js/dist/chart.umd.js"-->
+<!--@js id="vendor-mammoth" src="node_modules/mammoth/mammoth.browser.min.js"-->
+<!--@js id="vendor-pdfjs" src="node_modules/pdfjs-dist/build/pdf.min.js"-->
+<!--@b64 id="vendor-pdfjs-worker" src="node_modules/pdfjs-dist/build/pdf.worker.min.js"-->
+<!--@js id="vendor-reveal" src="node_modules/reveal.js/dist/reveal.js"-->
+<!--@js id="vendor-reveal-notes" src="node_modules/reveal.js/plugin/notes/notes.js"-->
+
+<!-- Application modules -->
+<!--@js id="app-util" src="src/js/util.js"-->
+<!--@js id="app-state" src="src/js/state.js"-->
+<!--@js id="app-schema" src="src/js/schema.js"-->
+<!--@js id="app-config" src="src/js/config.js"-->
+<!--@js id="app-ingest" src="src/js/ingest.js"-->
+<!--@js id="app-llm" src="src/js/llm.js"-->
+<!--@js id="app-charts" src="src/js/charts.js"-->
+<!--@js id="app-editor" src="src/js/editor.js"-->
+<!--@js id="app-render" src="src/js/render.js"-->
+<!--@js id="app-visuals" src="src/js/visuals.js"-->
+<!--@js id="app-exporter" src="src/js/exporter.js"-->
+<!--@js id="app-main-js" src="src/js/app.js"-->
+</body>
+</html>

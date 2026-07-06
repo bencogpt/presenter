@@ -1,0 +1,138 @@
+/* ============================================================
+   SlideForge deck styles — used in-app AND embedded in exports.
+   Slides are authored on a 1280x720 (16:9) canvas; reveal.js
+   scales the whole canvas to the window, so browser zoom and
+   any screen size keep the design intact.
+   ============================================================ */
+
+/* ---------- THEMES (CSS variable blocks) ----------
+   ORG CUSTOM THEME: copy one block, change the values, and add a
+   matching <option> in the theme selectors. Keep WCAG AA contrast. */
+.reveal-viewport[data-sf-theme="corporate"], .sf-themed[data-sf-theme="corporate"] {
+  --sf-bg: #ffffff;
+  --sf-bg-accent: #eef3fc;
+  --sf-ink: #16233c;
+  --sf-muted: #4a5872;
+  --sf-accent: #2456d6;
+  --sf-accent2: #0e9488;
+  --sf-title-ink: #16233c;
+  --sf-divider-bg: linear-gradient(135deg, #2456d6 0%, #123176 100%);
+  --sf-divider-ink: #ffffff;
+  --sf-quote-ink: #2456d6;
+}
+.reveal-viewport[data-sf-theme="dark"], .sf-themed[data-sf-theme="dark"] {
+  --sf-bg: #12161f;
+  --sf-bg-accent: #1a2130;
+  --sf-ink: #edf0f6;
+  --sf-muted: #a9b3c6;
+  --sf-accent: #6f9dff;
+  --sf-accent2: #4dd0c0;
+  --sf-title-ink: #ffffff;
+  --sf-divider-bg: linear-gradient(135deg, #1c2f5e 0%, #0c1220 100%);
+  --sf-divider-ink: #ffffff;
+  --sf-quote-ink: #8fb2ff;
+}
+.reveal-viewport[data-sf-theme="contrast"], .sf-themed[data-sf-theme="contrast"] {
+  --sf-bg: #000000;
+  --sf-bg-accent: #101010;
+  --sf-ink: #ffffff;
+  --sf-muted: #e8e8e8;
+  --sf-accent: #ffd400;
+  --sf-accent2: #ffd400;
+  --sf-title-ink: #ffd400;
+  --sf-divider-bg: #000000;
+  --sf-divider-ink: #ffd400;
+  --sf-quote-ink: #ffd400;
+}
+
+.reveal-viewport { background: var(--sf-bg); }
+
+/* ---------- base slide typography (large by design) ---------- */
+.reveal {
+  font-family: "InterVariable", Inter, system-ui, "Segoe UI", Roboto, "Noto Sans Hebrew", "Noto Sans Arabic", sans-serif;
+  font-size: 38px;            /* base size on the 1280x720 canvas */
+  font-weight: 400;
+  color: var(--sf-ink);
+  line-height: 1.35;
+}
+/* Sections are exactly the 1280x720 canvas (border-box beats reveal.css's
+   width:100% + our padding, so nothing overflows or shifts). */
+.reveal .slides section.sf-slide {
+  box-sizing: border-box;
+  width: 100%; height: 720px;
+  padding: 40px 60px;
+  text-align: left;
+}
+.reveal h1, .reveal h2 { font-weight: 700; letter-spacing: -0.015em; margin: 0 0 0.5em; color: var(--sf-title-ink); }
+.reveal h1 { font-size: 1.9em; }
+.reveal h2 { font-size: 1.35em; }
+.reveal ul { list-style: none; padding: 0; margin: 0; }
+.reveal li { margin: 0.45em 0; padding-left: 1.1em; position: relative; }
+.reveal li::before { content: "▸"; color: var(--sf-accent); position: absolute; left: 0; }
+.reveal [dir="rtl"] li, .reveal li[dir="rtl"] { padding-left: 0; padding-right: 1.1em; }
+.reveal [dir="rtl"] li::before, .reveal li[dir="rtl"]::before { left: auto; right: 0; }
+.reveal code { font-size: .85em; background: var(--sf-bg-accent); border-radius: 6px; padding: 0 .2em; }
+.reveal img { max-width: 100%; max-height: 100%; border-radius: 10px; }
+
+/* accent bar on standard slides — scoped to real sections because reveal.js
+   mirrors slide classes onto its .slide-background elements */
+.reveal .slides section.sf-slide::after {
+  content: ""; position: absolute; left: 60px; right: auto; top: 158px;
+  width: 84px; height: 6px; border-radius: 3px; background: var(--sf-accent);
+}
+.reveal .slides section[dir="rtl"].sf-slide::after { left: auto; right: 60px; }
+.reveal .slides section.sf-l-title::after, .reveal .slides section.sf-l-section::after,
+.reveal .slides section.sf-l-image_full::after, .reveal .slides section.sf-l-quote::after { display: none; }
+
+/* ---------- layouts ---------- */
+.sf-slide .sf-body { position: absolute; top: 200px; left: 60px; right: 60px; bottom: 40px; }
+
+/* title */
+.reveal .slides section.sf-l-title { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.sf-l-title h1 { font-size: 2.3em; margin-bottom: .2em; }
+.sf-l-title .sf-subtitle { font-size: 1.1em; color: var(--sf-muted); }
+
+/* section divider */
+.reveal .slides section.sf-l-section { display: flex; flex-direction: column; justify-content: center; background: var(--sf-divider-bg); }
+.sf-l-section h2 { color: var(--sf-divider-ink); font-size: 2em; margin: 0; }
+
+/* bullets + image (side by side) */
+.sf-l-bullets_image .sf-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 44px; align-items: center; }
+.sf-l-bullets_image .sf-img-box { width: 100%; height: 100%; max-height: 460px; display: flex; align-items: center; justify-content: center; }
+.sf-l-bullets_image .sf-img-box img { object-fit: contain; max-height: 460px; }
+.sf-img-placeholder {
+  width: 100%; height: 100%; border: 3px dashed var(--sf-muted); border-radius: 12px; opacity: .5;
+  display: flex; align-items: center; justify-content: center; font-size: .45em; text-align: center; padding: 20px;
+}
+
+/* image full */
+.reveal .slides section.sf-l-image_full { overflow: hidden; padding: 0; }
+.sf-l-image_full .sf-img-cover { position: absolute; inset: 0; }
+.sf-l-image_full .sf-img-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+.sf-l-image_full h2 {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 30px 40px;
+  background: linear-gradient(transparent, rgba(0,0,0,.72)); color: #fff; font-size: 1.4em;
+}
+
+/* chart */
+.sf-l-chart .sf-chart-box { position: absolute; top: 200px; left: 60px; right: 60px; bottom: 50px; }
+.sf-l-chart canvas, .sf-l-chart img.sf-chart-png { width: 100% !important; height: 100% !important; object-fit: contain; }
+
+/* two column */
+.sf-l-two_column .sf-body { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+
+/* quote */
+.reveal .slides section.sf-l-quote { display: flex; flex-direction: column; justify-content: center; padding: 40px 120px; }
+.sf-l-quote blockquote {
+  margin: 0; padding: 0; font-size: 1.5em; font-weight: 600; color: var(--sf-quote-ink); border: none; line-height: 1.4;
+  background: none; box-shadow: none; width: auto; max-width: none; font-style: normal;
+}
+.sf-l-quote blockquote::before { content: "“"; display: block; font-size: 2.2em; line-height: .6; opacity: .35; }
+.sf-l-quote .sf-attribution { padding-top: 26px; color: var(--sf-muted); font-size: .8em; }
+
+/* slide numbers */
+.reveal .slide-number { background: transparent; color: var(--sf-muted); font-size: 22px; right: 18px; bottom: 12px; }
+
+/* ---------- static print rendering (shares classes) ---------- */
+.print-slide { background: var(--sf-bg); color: var(--sf-ink); }
+.print-slide .sf-slide { transform-origin: top left; }

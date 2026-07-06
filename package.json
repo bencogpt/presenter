@@ -1,0 +1,30 @@
+{
+  "name": "slideforge-offline",
+  "version": "1.0.0",
+  "description": "Air-gapped single-file HTML presentation generator",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node build/build.mjs && node test/e2e.mjs",
+    "build": "node build/build.mjs",
+    "mock": "node tools/mock-server.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:41729/git/bencogpt/presenter"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "chart.js": "^4.5.1",
+    "dompurify": "^3.4.11",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^3.11.174",
+    "playwright": "^1.61.1",
+    "reveal.js": "^5.2.1"
+  }
+}
