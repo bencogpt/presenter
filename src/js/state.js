@@ -13,6 +13,7 @@
       timeoutS: 120, maxTokens: 8192, charCap: 60000,
       stylePrefix: "",
       systemPrompt: "",           // empty = built-in default (llm.js)
+      jsonMode: false,            // send response_format json_object (needs runtime support)
       persistConfig: false, persistTokens: false,
     },
     doc: null,        // { name, text, chars, chunked }

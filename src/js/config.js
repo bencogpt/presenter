@@ -59,6 +59,7 @@
     for (const [id, key] of FIELDS) $("#" + id).value = c[key] ?? "";
     updateFluxRows();
     if (!c.systemPrompt) $("#cfg-system-prompt").value = SF.llmDefaults.systemPrompt;
+    $("#cfg-json-mode").checked = !!c.jsonMode;
     $("#cfg-persist").checked = c.persistConfig;
     $("#cfg-persist-tokens").checked = c.persistTokens;
     $("#cfg-persist-tokens").disabled = !c.persistConfig;
@@ -80,6 +81,7 @@
     c.fluxPath = "/" + String(c.fluxPath || "/generate_image").trim().replace(/^\/+/, "");
     updateFluxRows();
     if (c.systemPrompt.trim() === SF.llmDefaults.systemPrompt.trim()) c.systemPrompt = "";
+    c.jsonMode = $("#cfg-json-mode").checked;
     c.persistConfig = $("#cfg-persist").checked;
     c.persistTokens = c.persistConfig && $("#cfg-persist-tokens").checked;
     persist();
@@ -151,6 +153,7 @@
     fillForm();
     updateHttpWarning();
     for (const [id] of FIELDS) $("#" + id).addEventListener("change", readForm);
+    $("#cfg-json-mode").addEventListener("change", readForm);
     $("#cfg-persist").addEventListener("change", () => {
       const on = $("#cfg-persist").checked;
       $("#cfg-persist-tokens").disabled = !on;
