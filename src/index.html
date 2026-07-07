@@ -27,6 +27,8 @@ window.DEFAULT_CONFIG = {
   llmModel: "",             // e.g. "glm-4-9b-chat" or "gemma-2-27b-it"
   fluxBase: "",             // e.g. "https://flux.apps.internal.example"
   fluxModel: "flux2",
+  fluxApi: "openai",        // "openai" = /v1/images/generations · "fastapi" = custom JSON endpoint
+  fluxPath: "/generate_image", // endpoint path used when fluxApi is "fastapi"
   imageSize: "1344x768",
   timeoutS: 120,            // request timeout, seconds
   maxTokens: 4096,          // max output tokens for outline generation
@@ -200,7 +202,14 @@ window.DEFAULT_CONFIG = {
   <fieldset>
     <legend data-i18n="cfg.flux">Image model (Flux2) — optional</legend>
     <label><span data-i18n="cfg.base">Base URL</span> <input type="url" id="cfg-flux-base" placeholder="https://flux.apps.internal" autocomplete="off" spellcheck="false" dir="ltr"></label>
-    <label><span data-i18n="cfg.model">Model name</span> <input type="text" id="cfg-flux-model" placeholder="flux2" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <label><span data-i18n="cfg.fluxApi">API style</span>
+      <select id="cfg-flux-api">
+        <option value="openai" data-i18n="cfg.fluxApi.openai">OpenAI-compatible (/v1/images/generations)</option>
+        <option value="fastapi" data-i18n="cfg.fluxApi.fastapi">Custom FastAPI (JSON prompt → image)</option>
+      </select>
+    </label>
+    <label id="flux-path-row" hidden><span data-i18n="cfg.fluxPath">Endpoint path</span> <input type="text" id="cfg-flux-path" value="/generate_image" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <label id="flux-model-row"><span data-i18n="cfg.model">Model name</span> <input type="text" id="cfg-flux-model" placeholder="flux2" autocomplete="off" spellcheck="false" dir="ltr"></label>
     <label><span data-i18n="cfg.token">API token</span> <input type="password" id="cfg-flux-token" autocomplete="off" dir="ltr"></label>
     <div class="row">
       <button id="btn-test-flux" class="btn btn-small" data-i18n="cfg.test">Test connection</button>

@@ -8,6 +8,7 @@
     config: {
       llmBase: "", llmModel: "", llmToken: "",
       fluxBase: "", fluxModel: "flux2", fluxToken: "",
+      fluxApi: "openai", fluxPath: "/generate_image",
       imageSize: "1344x768",
       timeoutS: 120, maxTokens: 4096, charCap: 60000,
       stylePrefix: "",

@@ -122,6 +122,12 @@ createServer(async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ created: Date.now(), data: [{ b64_json: PNG_B64 }] }));
   }
+  if (req.url === "/generate_image") { /* FastAPI-style custom contract */
+    const body = JSON.parse(await readBody(req) || "{}");
+    if (!body.prompt) { res.writeHead(422, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ detail: [{ msg: "field required", loc: ["body", "prompt"] }] })); }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ image: PNG_B64, width: body.width || 1344, height: body.height || 768 }));
+  }
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: { message: "not found" } }));
 }).listen(PORT, () => console.log(`mock LLM/Flux2 + static host on http://localhost:${PORT}`));

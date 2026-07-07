@@ -5,7 +5,7 @@
 <!--
   ============================================================
   SlideForge Offline — air-gapped HTML presentation generator
-  Single-file build. Version: 1.0.0 (built 2026-07-06)
+  Single-file build. Version: 1.0.0 (built 2026-07-07)
   Regenerate with: node build/build.mjs   (see BUILD.md)
   ============================================================
 -->
@@ -15,7 +15,7 @@
      e.g. "https://llm.apps.internal https://flux.apps.internal", then redistribute. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; worker-src blob:; connect-src https: http:; form-action 'none'; base-uri 'none'">
 <title>SlideForge Offline</title>
-<meta name="sf-version" content="1.0.0 (2026-07-06)">
+<meta name="sf-version" content="1.0.0 (2026-07-07)">
 
 <script id="default-config">
 /* ============================================================
@@ -28,6 +28,8 @@ window.DEFAULT_CONFIG = {
   llmModel: "",             // e.g. "glm-4-9b-chat" or "gemma-2-27b-it"
   fluxBase: "",             // e.g. "https://flux.apps.internal.example"
   fluxModel: "flux2",
+  fluxApi: "openai",        // "openai" = /v1/images/generations · "fastapi" = custom JSON endpoint
+  fluxPath: "/generate_image", // endpoint path used when fluxApi is "fastapi"
   imageSize: "1344x768",
   timeoutS: 120,            // request timeout, seconds
   maxTokens: 4096,          // max output tokens for outline generation
@@ -666,7 +668,14 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
   <fieldset>
     <legend data-i18n="cfg.flux">Image model (Flux2) — optional</legend>
     <label><span data-i18n="cfg.base">Base URL</span> <input type="url" id="cfg-flux-base" placeholder="https://flux.apps.internal" autocomplete="off" spellcheck="false" dir="ltr"></label>
-    <label><span data-i18n="cfg.model">Model name</span> <input type="text" id="cfg-flux-model" placeholder="flux2" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <label><span data-i18n="cfg.fluxApi">API style</span>
+      <select id="cfg-flux-api">
+        <option value="openai" data-i18n="cfg.fluxApi.openai">OpenAI-compatible (/v1/images/generations)</option>
+        <option value="fastapi" data-i18n="cfg.fluxApi.fastapi">Custom FastAPI (JSON prompt → image)</option>
+      </select>
+    </label>
+    <label id="flux-path-row" hidden><span data-i18n="cfg.fluxPath">Endpoint path</span> <input type="text" id="cfg-flux-path" value="/generate_image" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <label id="flux-model-row"><span data-i18n="cfg.model">Model name</span> <input type="text" id="cfg-flux-model" placeholder="flux2" autocomplete="off" spellcheck="false" dir="ltr"></label>
     <label><span data-i18n="cfg.token">API token</span> <input type="password" id="cfg-flux-token" autocomplete="off" dir="ltr"></label>
     <div class="row">
       <button id="btn-test-flux" class="btn btn-small" data-i18n="cfg.test">Test connection</button>
@@ -747,7 +756,7 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
 <div id="print-root" aria-hidden="true"></div>
 
 <footer id="app-footer">
-  <span>SlideForge Offline v1.0.0 · 2026-07-06</span>
+  <span>SlideForge Offline v1.0.0 · 2026-07-07</span>
 </footer>
 
 <div id="toast-region" aria-live="polite"></div>
@@ -1007,6 +1016,7 @@ window.SF = window.SF || {};
     config: {
       llmBase: "", llmModel: "", llmToken: "",
       fluxBase: "", fluxModel: "flux2", fluxToken: "",
+      fluxApi: "openai", fluxPath: "/generate_image",
       imageSize: "1344x768",
       timeoutS: 120, maxTokens: 4096, charCap: 60000,
       stylePrefix: "",
@@ -1212,6 +1222,10 @@ window.SF = window.SF || {};
     "cfg.llm": "Text model (OpenAI-compatible)",
     "cfg.flux": "Image model (Flux2) — optional",
     "cfg.base": "Base URL", "cfg.model": "Model name", "cfg.token": "API token",
+    "cfg.fluxApi": "API style",
+    "cfg.fluxApi.openai": "OpenAI-compatible (/v1/images/generations)",
+    "cfg.fluxApi.fastapi": "Custom FastAPI (JSON prompt → image)",
+    "cfg.fluxPath": "Endpoint path",
     "cfg.test": "Test connection",
     "cfg.adv": "Advanced",
     "cfg.timeout": "Request timeout (seconds)", "cfg.maxTokens": "Max output tokens",
@@ -1385,6 +1399,10 @@ window.SF = window.SF || {};
     "cfg.llm": "מודל טקסט (תואם OpenAI)",
     "cfg.flux": "מודל תמונות (Flux2) — אופציונלי",
     "cfg.base": "כתובת בסיס", "cfg.model": "שם המודל", "cfg.token": "טוקן API",
+    "cfg.fluxApi": "סגנון API",
+    "cfg.fluxApi.openai": "תואם OpenAI‏ (/v1/images/generations)",
+    "cfg.fluxApi.fastapi": "FastAPI מותאם (JSON עם prompt ← תמונה)",
+    "cfg.fluxPath": "נתיב הקצה",
     "cfg.test": "בדיקת חיבור",
     "cfg.adv": "מתקדם",
     "cfg.timeout": "זמן קצוב לבקשה (שניות)", "cfg.maxTokens": "מקסימום טוקנים בפלט",
@@ -1573,6 +1591,7 @@ window.SF = window.SF || {};
   const FIELDS = [
     ["cfg-llm-base", "llmBase"], ["cfg-llm-model", "llmModel"], ["cfg-llm-token", "llmToken"],
     ["cfg-flux-base", "fluxBase"], ["cfg-flux-model", "fluxModel"], ["cfg-flux-token", "fluxToken"],
+    ["cfg-flux-api", "fluxApi"], ["cfg-flux-path", "fluxPath"],
     ["cfg-timeout", "timeoutS"], ["cfg-max-tokens", "maxTokens"], ["cfg-char-cap", "charCap"],
     ["cfg-image-size", "imageSize"], ["cfg-style-prefix", "stylePrefix"], ["cfg-system-prompt", "systemPrompt"],
   ];
@@ -1584,7 +1603,7 @@ window.SF = window.SF || {};
 
   function loadInitial() {
     const dc = window.DEFAULT_CONFIG || {};
-    for (const k of ["llmBase", "llmModel", "fluxBase", "fluxModel", "imageSize", "timeoutS", "maxTokens", "charCap", "stylePrefix"]) {
+    for (const k of ["llmBase", "llmModel", "fluxBase", "fluxModel", "fluxApi", "fluxPath", "imageSize", "timeoutS", "maxTokens", "charCap", "stylePrefix"]) {
       if (dc[k] != null && dc[k] !== "") state.config[k] = dc[k];
     }
     try {
@@ -1619,6 +1638,7 @@ window.SF = window.SF || {};
   function fillForm() {
     const c = state.config;
     for (const [id, key] of FIELDS) $("#" + id).value = c[key] ?? "";
+    updateFluxRows();
     if (!c.systemPrompt) $("#cfg-system-prompt").value = SF.llmDefaults.systemPrompt;
     $("#cfg-persist").checked = c.persistConfig;
     $("#cfg-persist-tokens").checked = c.persistTokens;
@@ -1637,12 +1657,21 @@ window.SF = window.SF || {};
     }
     c.llmBase = normBase(c.llmBase);
     c.fluxBase = normBase(c.fluxBase);
+    if (!["openai", "fastapi"].includes(c.fluxApi)) c.fluxApi = "openai";
+    c.fluxPath = "/" + String(c.fluxPath || "/generate_image").trim().replace(/^\/+/, "");
+    updateFluxRows();
     if (c.systemPrompt.trim() === SF.llmDefaults.systemPrompt.trim()) c.systemPrompt = "";
     c.persistConfig = $("#cfg-persist").checked;
     c.persistTokens = c.persistConfig && $("#cfg-persist-tokens").checked;
     persist();
     updateHttpWarning();
     SF.emit("config-changed");
+  }
+
+  function updateFluxRows() {
+    const fastapi = state.config.fluxApi === "fastapi";
+    $("#flux-path-row").hidden = !fastapi;
+    $("#flux-model-row").hidden = fastapi;
   }
 
   function updateHttpWarning() {
@@ -2710,20 +2739,59 @@ window.SF = window.SF || {};
   let stopRequested = false;
   let running = false;
 
-  /** Call the image model. Returns { mime, b64 }. Sequential use only (spec §7.5). */
+  /* Liberal base64-image finder: FastAPI wrappers name the field freely
+     (image / images[0] / b64 / b64_json / data[0].b64_json / result / output /
+     a data: URI). Checks common keys first, then scans for any base64-looking
+     string ≥1 KB. */
+  function findB64(json) {
+    const b64ish = (v, minLen) => typeof v === "string" && (v.startsWith("data:image") || (v.length >= minLen && /^[A-Za-z0-9+/=\r\n]+$/.test(v.slice(0, 200))));
+    /* known keys: any plausible base64 counts; deep scan: long strings only
+       (avoids mistaking ids/hashes for images) */
+    const looksB64 = (v) => b64ish(v, 1000);
+    const direct = [
+      json && json.data && json.data[0] && (json.data[0].b64_json || json.data[0].b64),
+      json && json.image, json && json.b64, json && json.b64_json, json && json.result, json && json.output,
+      Array.isArray(json && json.images) ? (typeof json.images[0] === "string" ? json.images[0] : json.images[0] && (json.images[0].b64_json || json.images[0].image)) : null,
+    ];
+    for (const v of direct) if (b64ish(v, 50)) return v;
+    const stack = [json];
+    let depth = 0;
+    while (stack.length && depth++ < 200) {
+      const cur = stack.pop();
+      if (!cur || typeof cur !== "object") continue;
+      for (const v of Object.values(cur)) {
+        if (looksB64(v)) return v;
+        if (v && typeof v === "object") stack.push(v);
+      }
+    }
+    return null;
+  }
+
+  function sizeWH(sizeStr) {
+    const m = String(sizeStr || "").match(/(\d+)\s*[xX×]\s*(\d+)/);
+    return m ? { width: +m[1], height: +m[2] } : { width: 1344, height: 768 };
+  }
+
+  /** Call the image model. Returns { mime, b64 }. Sequential use only (spec §7.5).
+      Two API styles (Settings → Image model → API style):
+      - "openai":  POST {base}/v1/images/generations, OpenAI images body
+      - "fastapi": POST {base}{fluxPath}, body { prompt, width, height } */
   async function generateImage(prompt, opts) {
     opts = opts || {};
     const c = state.config;
     if (!c.fluxBase) throw new Error(t("err.imgNotConfigured"));
-    const body = JSON.stringify({
-      model: c.fluxModel || "flux2",
-      prompt,
-      size: opts.size || c.imageSize || "1344x768",
-      n: 1,
-      response_format: "b64_json",
-    });
+    const size = opts.size || c.imageSize || "1344x768";
+    let url, body;
+    if (c.fluxApi === "fastapi") {
+      url = c.fluxBase + (c.fluxPath || "/generate_image");
+      const { width, height } = sizeWH(size);
+      body = JSON.stringify({ prompt, width, height });
+    } else {
+      url = c.fluxBase + "/v1/images/generations";
+      body = JSON.stringify({ model: c.fluxModel || "flux2", prompt, size, n: 1, response_format: "b64_json" });
+    }
     const doCall = async () => {
-      const r = await SF.llm.rawFetch(c.fluxBase + "/v1/images/generations", {
+      const r = await SF.llm.rawFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(c.fluxToken ? { Authorization: "Bearer " + c.fluxToken } : {}) },
         body,
@@ -2734,16 +2802,17 @@ window.SF = window.SF || {};
         throw Object.assign(new Error(t("err.imgStatus", { status: r.status })), { detail: await r.text().catch(() => "") });
       }
       const ct = r.headers.get("content-type") || "";
-      if (ct.startsWith("image/")) { /* some runtimes return raw bytes */
+      if (ct.startsWith("image/") || ct.includes("octet-stream")) { /* raw bytes (FastAPI Response/FileResponse) */
         const buf = new Uint8Array(await r.arrayBuffer());
         let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-        return { mime: ct.split(";")[0], b64: btoa(bin) };
+        return { mime: ct.startsWith("image/") ? ct.split(";")[0] : "image/png", b64: btoa(bin) };
       }
       const json = await r.json();
-      const d = json && json.data && json.data[0];
-      const b64 = (d && (d.b64_json || d.b64)) || (Array.isArray(json.images) ? (typeof json.images[0] === "string" ? json.images[0] : json.images[0] && json.images[0].b64_json) : null);
+      const b64 = findB64(json);
       if (!b64) throw Object.assign(new Error(t("err.imgShape")), { detail: JSON.stringify(json).slice(0, 1500) });
-      return { mime: "image/png", b64: String(b64).replace(/^data:[^,]+,/, "") };
+      const dataUri = String(b64).match(/^data:(image\/[\w+.-]+);base64,(.*)$/s);
+      if (dataUri) return { mime: dataUri[1], b64: dataUri[2].replace(/\s+/g, "") };
+      return { mime: "image/png", b64: String(b64).replace(/^data:[^,]+,/, "").replace(/\s+/g, "") };
     };
     try { return await doCall(); }
     catch (e) {
@@ -3002,7 +3071,7 @@ window.SF = window.SF || {};
       deckOpts: state.deckOpts,
       assets: state.assets,
       gen: state.gen,
-      config: { llm_base: c.llmBase, llm_model: c.llmModel, flux_base: c.fluxBase, flux_model: c.fluxModel, image_size: c.imageSize },
+      config: { llm_base: c.llmBase, llm_model: c.llmModel, flux_base: c.fluxBase, flux_model: c.fluxModel, flux_api: c.fluxApi, flux_path: c.fluxPath, image_size: c.imageSize },
     };
     const name = ((state.outline && state.outline.title) || "slideforge-project").replace(/[^\w -]+/g, "").trim().replace(/\s+/g, "-").slice(0, 50);
     SF.downloadFile(name + ".slideforge.json", JSON.stringify(project), "application/json");
@@ -3036,7 +3105,11 @@ window.SF = window.SF || {};
         const c = state.config;
         if (!c.llmBase && json.config.llm_base) c.llmBase = SF.cleanText(json.config.llm_base, 300);
         if (!c.llmModel && json.config.llm_model) c.llmModel = SF.cleanText(json.config.llm_model, 100);
-        if (!c.fluxBase && json.config.flux_base) c.fluxBase = SF.cleanText(json.config.flux_base, 300);
+        if (!c.fluxBase && json.config.flux_base) {
+          c.fluxBase = SF.cleanText(json.config.flux_base, 300);
+          if (["openai", "fastapi"].includes(json.config.flux_api)) c.fluxApi = json.config.flux_api;
+          if (json.config.flux_path) c.fluxPath = SF.cleanText(json.config.flux_path, 200);
+        }
         SF.config.fillForm();
       }
       state.approved = true;

@@ -145,7 +145,7 @@
       deckOpts: state.deckOpts,
       assets: state.assets,
       gen: state.gen,
-      config: { llm_base: c.llmBase, llm_model: c.llmModel, flux_base: c.fluxBase, flux_model: c.fluxModel, image_size: c.imageSize },
+      config: { llm_base: c.llmBase, llm_model: c.llmModel, flux_base: c.fluxBase, flux_model: c.fluxModel, flux_api: c.fluxApi, flux_path: c.fluxPath, image_size: c.imageSize },
     };
     const name = ((state.outline && state.outline.title) || "slideforge-project").replace(/[^\w -]+/g, "").trim().replace(/\s+/g, "-").slice(0, 50);
     SF.downloadFile(name + ".slideforge.json", JSON.stringify(project), "application/json");
@@ -179,7 +179,11 @@
         const c = state.config;
         if (!c.llmBase && json.config.llm_base) c.llmBase = SF.cleanText(json.config.llm_base, 300);
         if (!c.llmModel && json.config.llm_model) c.llmModel = SF.cleanText(json.config.llm_model, 100);
-        if (!c.fluxBase && json.config.flux_base) c.fluxBase = SF.cleanText(json.config.flux_base, 300);
+        if (!c.fluxBase && json.config.flux_base) {
+          c.fluxBase = SF.cleanText(json.config.flux_base, 300);
+          if (["openai", "fastapi"].includes(json.config.flux_api)) c.fluxApi = json.config.flux_api;
+          if (json.config.flux_path) c.fluxPath = SF.cleanText(json.config.flux_path, 200);
+        }
         SF.config.fillForm();
       }
       state.approved = true;

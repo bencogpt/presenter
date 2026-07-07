@@ -191,6 +191,17 @@ try {
   await page.waitForSelector("#flux-test-result.fail", { timeout: 15000 });
   const fluxMsg = await page.textContent("#flux-test-result");
   check("clear 'not an image API' message", fluxMsg.includes("image-generation API"), fluxMsg);
+
+  console.log("12. custom FastAPI image adapter (/generate_image)");
+  await page.fill("#cfg-flux-base", BASE);
+  await page.selectOption("#cfg-flux-api", "fastapi");
+  await page.waitForTimeout(200);
+  check("endpoint-path field appears for FastAPI style", await page.isVisible("#flux-path-row"));
+  check("model-name field hidden for FastAPI style", !(await page.isVisible("#flux-model-row")));
+  check("default path prefilled", (await page.inputValue("#cfg-flux-path")) === "/generate_image");
+  await page.click("#btn-test-flux");
+  await page.waitForSelector("#flux-test-result.ok", { timeout: 15000 });
+  check("FastAPI-style image generated ({image: b64} response parsed)", true);
 } finally {
   await browser.close();
   server.kill();

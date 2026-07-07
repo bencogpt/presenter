@@ -10,6 +10,7 @@
   const FIELDS = [
     ["cfg-llm-base", "llmBase"], ["cfg-llm-model", "llmModel"], ["cfg-llm-token", "llmToken"],
     ["cfg-flux-base", "fluxBase"], ["cfg-flux-model", "fluxModel"], ["cfg-flux-token", "fluxToken"],
+    ["cfg-flux-api", "fluxApi"], ["cfg-flux-path", "fluxPath"],
     ["cfg-timeout", "timeoutS"], ["cfg-max-tokens", "maxTokens"], ["cfg-char-cap", "charCap"],
     ["cfg-image-size", "imageSize"], ["cfg-style-prefix", "stylePrefix"], ["cfg-system-prompt", "systemPrompt"],
   ];
@@ -21,7 +22,7 @@
 
   function loadInitial() {
     const dc = window.DEFAULT_CONFIG || {};
-    for (const k of ["llmBase", "llmModel", "fluxBase", "fluxModel", "imageSize", "timeoutS", "maxTokens", "charCap", "stylePrefix"]) {
+    for (const k of ["llmBase", "llmModel", "fluxBase", "fluxModel", "fluxApi", "fluxPath", "imageSize", "timeoutS", "maxTokens", "charCap", "stylePrefix"]) {
       if (dc[k] != null && dc[k] !== "") state.config[k] = dc[k];
     }
     try {
@@ -56,6 +57,7 @@
   function fillForm() {
     const c = state.config;
     for (const [id, key] of FIELDS) $("#" + id).value = c[key] ?? "";
+    updateFluxRows();
     if (!c.systemPrompt) $("#cfg-system-prompt").value = SF.llmDefaults.systemPrompt;
     $("#cfg-persist").checked = c.persistConfig;
     $("#cfg-persist-tokens").checked = c.persistTokens;
@@ -74,12 +76,21 @@
     }
     c.llmBase = normBase(c.llmBase);
     c.fluxBase = normBase(c.fluxBase);
+    if (!["openai", "fastapi"].includes(c.fluxApi)) c.fluxApi = "openai";
+    c.fluxPath = "/" + String(c.fluxPath || "/generate_image").trim().replace(/^\/+/, "");
+    updateFluxRows();
     if (c.systemPrompt.trim() === SF.llmDefaults.systemPrompt.trim()) c.systemPrompt = "";
     c.persistConfig = $("#cfg-persist").checked;
     c.persistTokens = c.persistConfig && $("#cfg-persist-tokens").checked;
     persist();
     updateHttpWarning();
     SF.emit("config-changed");
+  }
+
+  function updateFluxRows() {
+    const fastapi = state.config.fluxApi === "fastapi";
+    $("#flux-path-row").hidden = !fastapi;
+    $("#flux-model-row").hidden = fastapi;
   }
 
   function updateHttpWarning() {

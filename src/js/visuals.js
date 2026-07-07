@@ -8,20 +8,59 @@
   let stopRequested = false;
   let running = false;
 
-  /** Call the image model. Returns { mime, b64 }. Sequential use only (spec §7.5). */
+  /* Liberal base64-image finder: FastAPI wrappers name the field freely
+     (image / images[0] / b64 / b64_json / data[0].b64_json / result / output /
+     a data: URI). Checks common keys first, then scans for any base64-looking
+     string ≥1 KB. */
+  function findB64(json) {
+    const b64ish = (v, minLen) => typeof v === "string" && (v.startsWith("data:image") || (v.length >= minLen && /^[A-Za-z0-9+/=\r\n]+$/.test(v.slice(0, 200))));
+    /* known keys: any plausible base64 counts; deep scan: long strings only
+       (avoids mistaking ids/hashes for images) */
+    const looksB64 = (v) => b64ish(v, 1000);
+    const direct = [
+      json && json.data && json.data[0] && (json.data[0].b64_json || json.data[0].b64),
+      json && json.image, json && json.b64, json && json.b64_json, json && json.result, json && json.output,
+      Array.isArray(json && json.images) ? (typeof json.images[0] === "string" ? json.images[0] : json.images[0] && (json.images[0].b64_json || json.images[0].image)) : null,
+    ];
+    for (const v of direct) if (b64ish(v, 50)) return v;
+    const stack = [json];
+    let depth = 0;
+    while (stack.length && depth++ < 200) {
+      const cur = stack.pop();
+      if (!cur || typeof cur !== "object") continue;
+      for (const v of Object.values(cur)) {
+        if (looksB64(v)) return v;
+        if (v && typeof v === "object") stack.push(v);
+      }
+    }
+    return null;
+  }
+
+  function sizeWH(sizeStr) {
+    const m = String(sizeStr || "").match(/(\d+)\s*[xX×]\s*(\d+)/);
+    return m ? { width: +m[1], height: +m[2] } : { width: 1344, height: 768 };
+  }
+
+  /** Call the image model. Returns { mime, b64 }. Sequential use only (spec §7.5).
+      Two API styles (Settings → Image model → API style):
+      - "openai":  POST {base}/v1/images/generations, OpenAI images body
+      - "fastapi": POST {base}{fluxPath}, body { prompt, width, height } */
   async function generateImage(prompt, opts) {
     opts = opts || {};
     const c = state.config;
     if (!c.fluxBase) throw new Error(t("err.imgNotConfigured"));
-    const body = JSON.stringify({
-      model: c.fluxModel || "flux2",
-      prompt,
-      size: opts.size || c.imageSize || "1344x768",
-      n: 1,
-      response_format: "b64_json",
-    });
+    const size = opts.size || c.imageSize || "1344x768";
+    let url, body;
+    if (c.fluxApi === "fastapi") {
+      url = c.fluxBase + (c.fluxPath || "/generate_image");
+      const { width, height } = sizeWH(size);
+      body = JSON.stringify({ prompt, width, height });
+    } else {
+      url = c.fluxBase + "/v1/images/generations";
+      body = JSON.stringify({ model: c.fluxModel || "flux2", prompt, size, n: 1, response_format: "b64_json" });
+    }
     const doCall = async () => {
-      const r = await SF.llm.rawFetch(c.fluxBase + "/v1/images/generations", {
+      const r = await SF.llm.rawFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(c.fluxToken ? { Authorization: "Bearer " + c.fluxToken } : {}) },
         body,
@@ -32,16 +71,17 @@
         throw Object.assign(new Error(t("err.imgStatus", { status: r.status })), { detail: await r.text().catch(() => "") });
       }
       const ct = r.headers.get("content-type") || "";
-      if (ct.startsWith("image/")) { /* some runtimes return raw bytes */
+      if (ct.startsWith("image/") || ct.includes("octet-stream")) { /* raw bytes (FastAPI Response/FileResponse) */
         const buf = new Uint8Array(await r.arrayBuffer());
         let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-        return { mime: ct.split(";")[0], b64: btoa(bin) };
+        return { mime: ct.startsWith("image/") ? ct.split(";")[0] : "image/png", b64: btoa(bin) };
       }
       const json = await r.json();
-      const d = json && json.data && json.data[0];
-      const b64 = (d && (d.b64_json || d.b64)) || (Array.isArray(json.images) ? (typeof json.images[0] === "string" ? json.images[0] : json.images[0] && json.images[0].b64_json) : null);
+      const b64 = findB64(json);
       if (!b64) throw Object.assign(new Error(t("err.imgShape")), { detail: JSON.stringify(json).slice(0, 1500) });
-      return { mime: "image/png", b64: String(b64).replace(/^data:[^,]+,/, "") };
+      const dataUri = String(b64).match(/^data:(image\/[\w+.-]+);base64,(.*)$/s);
+      if (dataUri) return { mime: dataUri[1], b64: dataUri[2].replace(/\s+/g, "") };
+      return { mime: "image/png", b64: String(b64).replace(/^data:[^,]+,/, "").replace(/\s+/g, "") };
     };
     try { return await doCall(); }
     catch (e) {
