@@ -32,7 +32,7 @@ window.DEFAULT_CONFIG = {
   fluxPath: "/generate_image", // endpoint path used when fluxApi is "fastapi"
   imageSize: "1344x768",
   timeoutS: 120,            // request timeout, seconds
-  maxTokens: 4096,          // max output tokens for outline generation
+  maxTokens: 8192,          // max output tokens (reasoning models need headroom)
   charCap: 60000,           // document char cap before chunked summarization kicks in
   stylePrefix: "clean corporate illustration, presentation graphic, flat design, no text in image",
   uiLang: ""                // "" = auto-detect; or force "en" / "he"
@@ -685,7 +685,7 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
   <details>
     <summary data-i18n="cfg.adv">Advanced</summary>
     <label><span data-i18n="cfg.timeout">Request timeout (seconds)</span> <input type="number" id="cfg-timeout" min="10" max="600" value="120"></label>
-    <label><span data-i18n="cfg.maxTokens">Max output tokens</span> <input type="number" id="cfg-max-tokens" min="256" max="32768" value="4096"></label>
+    <label><span data-i18n="cfg.maxTokens">Max output tokens</span> <input type="number" id="cfg-max-tokens" min="256" max="32768" value="8192"></label>
     <label><span data-i18n="cfg.charCap">Document character cap</span> <input type="number" id="cfg-char-cap" min="5000" max="500000" value="60000"></label>
     <label><span data-i18n="cfg.imageSize">Image size</span> <input type="text" id="cfg-image-size" value="1344x768" spellcheck="false" dir="ltr"></label>
     <label><span data-i18n="cfg.stylePrefix">Image style prefix</span> <textarea id="cfg-style-prefix" rows="2" dir="ltr"></textarea></label>
@@ -1018,7 +1018,7 @@ window.SF = window.SF || {};
       fluxBase: "", fluxModel: "flux2", fluxToken: "",
       fluxApi: "openai", fluxPath: "/generate_image",
       imageSize: "1344x768",
-      timeoutS: 120, maxTokens: 4096, charCap: 60000,
+      timeoutS: 120, maxTokens: 8192, charCap: 60000,
       stylePrefix: "",
       systemPrompt: "",           // empty = built-in default (llm.js)
       persistConfig: false, persistTokens: false,
@@ -1267,6 +1267,7 @@ window.SF = window.SF || {};
     "err.llmUnreachable": "LLM unreachable — check the base URL in Settings (and that the route allows this app's origin: CORS).",
     "err.cancelled": "Cancelled.",
     "err.badJson": "The model did not produce valid outline JSON.",
+    "err.truncated": "The model hit its output-token limit before finishing the outline. Raise “Max output tokens” in ⚙ Settings → Advanced (reasoning models need extra budget) and try again.",
     "err.fileTooBig": "File is {size} — max 20 MB.",
     "err.legacyDoc": "Legacy .doc isn't supported. Open it in Word and save as .docx, then retry.",
     "err.badType": "Unsupported file type .{ext} — use .docx, .pdf, .md or .txt",
@@ -1441,6 +1442,7 @@ window.SF = window.SF || {};
     "err.llmUnreachable": "המודל אינו נגיש — בדקו את כתובת הבסיס בהגדרות (וש-CORS מאפשר את מקור האפליקציה).",
     "err.cancelled": "בוטל.",
     "err.badJson": "המודל לא הפיק JSON תקין למתאר.",
+    "err.truncated": "המודל הגיע לתקרת טוקני הפלט לפני שסיים את המתאר. הגדילו את \"מקסימום טוקנים בפלט\" ב-⚙ הגדרות ← מתקדם (מודלים חושבים צריכים תקציב נוסף) ונסו שוב.",
     "err.fileTooBig": "הקובץ שוקל {size} — המקסימום 20 MB.",
     "err.legacyDoc": "‎.doc ישן אינו נתמך. פתחו ב-Word ושמרו כ-‎.docx ונסו שוב.",
     "err.badType": "סוג קובץ לא נתמך ‎.{ext} — השתמשו ב-docx / pdf / md / txt.",
@@ -1595,7 +1597,7 @@ window.SF = window.SF || {};
     ["cfg-timeout", "timeoutS"], ["cfg-max-tokens", "maxTokens"], ["cfg-char-cap", "charCap"],
     ["cfg-image-size", "imageSize"], ["cfg-style-prefix", "stylePrefix"], ["cfg-system-prompt", "systemPrompt"],
   ];
-  const NUMERIC = { timeoutS: [10, 600, 120], maxTokens: [256, 32768, 4096], charCap: [5000, 500000, 60000] };
+  const NUMERIC = { timeoutS: [10, 600, 120], maxTokens: [256, 32768, 8192], charCap: [5000, 500000, 60000] };
 
   function normBase(url) {
     return String(url || "").trim().replace(/\/+$/, "").replace(/\/v1$/, "");
@@ -1945,6 +1947,7 @@ window.SF = window.SF || {};
 
   /* ---------- low-level fetch with timeout + one retry (spec FR-ERR-1) ---------- */
   let activeController = null;
+  let lastFinishReason = null;
 
   async function rawFetch(url, opts, timeoutS) {
     const ctrl = new AbortController();
@@ -1986,6 +1989,7 @@ window.SF = window.SF || {};
       }, opts.timeoutS);
       if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
       const json = await r.json();
+      lastFinishReason = json && json.choices && json.choices[0] && json.choices[0].finish_reason || null;
       const msg = json && json.choices && json.choices[0] && json.choices[0].message;
       if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
       /* Runtimes differ: content may be a string, null (token budget spent on
@@ -2018,17 +2022,75 @@ window.SF = window.SF || {};
 
   function cancelActive() { if (activeController) activeController.abort("user"); }
 
-  /* ---------- JSON extraction (spec FR-LLM-2) ---------- */
-  function extractJson(text) {
-    let t = String(text).trim();
-    const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fence) t = fence[1].trim();
-    if (!t.startsWith("{")) {
-      const start = t.indexOf("{");
-      const end = t.lastIndexOf("}");
-      if (start >= 0 && end > start) t = t.slice(start, end + 1);
+  /* ---------- JSON extraction (spec FR-LLM-2) ----------
+     Reasoning models wrap answers in <think> blocks (whose braces confuse
+     naive slicing), add prose before/after, emit trailing commas, or get cut
+     off at the token limit. Extraction: strip reasoning → prefer fenced block
+     → balanced-brace slice → last-} slice → repair (incl. auto-closing
+     truncated JSON) as a final fallback. */
+  function sliceBalanced(text, start) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (esc) { esc = false; continue; }
+      if (inStr) {
+        if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{" || ch === "[") depth++;
+      else if (ch === "}" || ch === "]") { depth--; if (depth === 0) return text.slice(start, i + 1); }
     }
-    return JSON.parse(t);
+    return null; // unbalanced: probably truncated
+  }
+
+  function repairJson(candidate) {
+    let s = candidate
+      .replace(/[\u201C\u201D]/g, '"')          // smart quotes
+      .replace(/,\s*([}\]])/g, "$1");            // trailing commas
+    /* auto-close truncated output: track open strings/braces and close them */
+    let inStr = false, esc = false;
+    const stack = [];
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (inStr) {
+        if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{" || ch === "[") stack.push(ch);
+      else if (ch === "}" || ch === "]") stack.pop();
+    }
+    if (inStr) s += '"';
+    s = s.replace(/,\s*$/, "").replace(/:\s*$/, ": null");
+    while (stack.length) s += stack.pop() === "{" ? "}" : "]";
+    return s;
+  }
+
+  function extractJson(text) {
+    let raw = String(text)
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/<\/?(?:think|thinking|reasoning)>/gi, "")
+      .trim();
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence && fence[1].includes("{")) raw = fence[1].trim();
+    const start = raw.indexOf("{");
+    if (start < 0) throw new SyntaxError("no JSON object in model output");
+    const candidates = [];
+    const balanced = sliceBalanced(raw, start);
+    if (balanced) candidates.push(balanced);
+    const end = raw.lastIndexOf("}");
+    if (end > start) candidates.push(raw.slice(start, end + 1));
+    candidates.push(raw.slice(start));
+    let lastErr;
+    for (const c of candidates) {
+      try { return JSON.parse(c); } catch (e) { lastErr = e; }
+      try { return JSON.parse(repairJson(c)); } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new SyntaxError("unparseable model output");
   }
 
   /* ---------- outline generation ---------- */
@@ -2099,7 +2161,7 @@ window.SF = window.SF || {};
       try {
         return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
       } catch (e2) {
-        const err = new Error(t("err.badJson"));
+        const err = new Error(lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
         err.rawOutput = raw;
         throw err;
       }
@@ -3238,6 +3300,7 @@ window.SF = window.SF || {};
       onStatus("");
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
+        SF.toast(e.message, "error", 10000);
         $("#json-fix-area").value = e.rawOutput;
         $("#dlg-jsonfix").showModal();
       } else {

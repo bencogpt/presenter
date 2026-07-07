@@ -14,7 +14,7 @@
     ["cfg-timeout", "timeoutS"], ["cfg-max-tokens", "maxTokens"], ["cfg-char-cap", "charCap"],
     ["cfg-image-size", "imageSize"], ["cfg-style-prefix", "stylePrefix"], ["cfg-system-prompt", "systemPrompt"],
   ];
-  const NUMERIC = { timeoutS: [10, 600, 120], maxTokens: [256, 32768, 4096], charCap: [5000, 500000, 60000] };
+  const NUMERIC = { timeoutS: [10, 600, 120], maxTokens: [256, 32768, 8192], charCap: [5000, 500000, 60000] };
 
   function normBase(url) {
     return String(url || "").trim().replace(/\/+$/, "").replace(/\/v1$/, "");

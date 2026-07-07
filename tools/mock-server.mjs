@@ -108,7 +108,12 @@ createServer(async (req, res) => {
       slide.title = "Regenerated: " + (slide.title || "slide");
       content = JSON.stringify(slide);
     } else if (/pong/i.test(userMsg)) content = "pong";
-    else content = "```json\n" + JSON.stringify(OUTLINE) + "\n```"; // fenced on purpose: exercises the parser
+    else {
+      /* deliberately messy, like real reasoning models: <think> with braces,
+         fenced JSON with a trailing comma, prose after the fence */
+      const withTrailingComma = JSON.stringify(OUTLINE).replace(/\]\}$/, "],}");
+      content = "<think>Planning {the} deck structure now...</think>\n```json\n" + withTrailingComma + "\n```\nLet me know if you need changes!";
+    }
     /* emulate reasoning runtimes: on a small max_tokens budget, content comes
        back null with the text in reasoning_content (seen on GLM/vLLM) */
     const message = body.max_tokens && body.max_tokens < 100

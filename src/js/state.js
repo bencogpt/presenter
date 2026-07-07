@@ -10,7 +10,7 @@
       fluxBase: "", fluxModel: "flux2", fluxToken: "",
       fluxApi: "openai", fluxPath: "/generate_image",
       imageSize: "1344x768",
-      timeoutS: 120, maxTokens: 4096, charCap: 60000,
+      timeoutS: 120, maxTokens: 8192, charCap: 60000,
       stylePrefix: "",
       systemPrompt: "",           // empty = built-in default (llm.js)
       persistConfig: false, persistTokens: false,

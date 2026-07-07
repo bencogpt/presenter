@@ -28,6 +28,7 @@
 
   /* ---------- low-level fetch with timeout + one retry (spec FR-ERR-1) ---------- */
   let activeController = null;
+  let lastFinishReason = null;
 
   async function rawFetch(url, opts, timeoutS) {
     const ctrl = new AbortController();
@@ -69,6 +70,7 @@
       }, opts.timeoutS);
       if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
       const json = await r.json();
+      lastFinishReason = json && json.choices && json.choices[0] && json.choices[0].finish_reason || null;
       const msg = json && json.choices && json.choices[0] && json.choices[0].message;
       if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
       /* Runtimes differ: content may be a string, null (token budget spent on
@@ -101,17 +103,75 @@
 
   function cancelActive() { if (activeController) activeController.abort("user"); }
 
-  /* ---------- JSON extraction (spec FR-LLM-2) ---------- */
-  function extractJson(text) {
-    let t = String(text).trim();
-    const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fence) t = fence[1].trim();
-    if (!t.startsWith("{")) {
-      const start = t.indexOf("{");
-      const end = t.lastIndexOf("}");
-      if (start >= 0 && end > start) t = t.slice(start, end + 1);
+  /* ---------- JSON extraction (spec FR-LLM-2) ----------
+     Reasoning models wrap answers in <think> blocks (whose braces confuse
+     naive slicing), add prose before/after, emit trailing commas, or get cut
+     off at the token limit. Extraction: strip reasoning → prefer fenced block
+     → balanced-brace slice → last-} slice → repair (incl. auto-closing
+     truncated JSON) as a final fallback. */
+  function sliceBalanced(text, start) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (esc) { esc = false; continue; }
+      if (inStr) {
+        if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{" || ch === "[") depth++;
+      else if (ch === "}" || ch === "]") { depth--; if (depth === 0) return text.slice(start, i + 1); }
     }
-    return JSON.parse(t);
+    return null; // unbalanced: probably truncated
+  }
+
+  function repairJson(candidate) {
+    let s = candidate
+      .replace(/[\u201C\u201D]/g, '"')          // smart quotes
+      .replace(/,\s*([}\]])/g, "$1");            // trailing commas
+    /* auto-close truncated output: track open strings/braces and close them */
+    let inStr = false, esc = false;
+    const stack = [];
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (inStr) {
+        if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === "{" || ch === "[") stack.push(ch);
+      else if (ch === "}" || ch === "]") stack.pop();
+    }
+    if (inStr) s += '"';
+    s = s.replace(/,\s*$/, "").replace(/:\s*$/, ": null");
+    while (stack.length) s += stack.pop() === "{" ? "}" : "]";
+    return s;
+  }
+
+  function extractJson(text) {
+    let raw = String(text)
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/<\/?(?:think|thinking|reasoning)>/gi, "")
+      .trim();
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence && fence[1].includes("{")) raw = fence[1].trim();
+    const start = raw.indexOf("{");
+    if (start < 0) throw new SyntaxError("no JSON object in model output");
+    const candidates = [];
+    const balanced = sliceBalanced(raw, start);
+    if (balanced) candidates.push(balanced);
+    const end = raw.lastIndexOf("}");
+    if (end > start) candidates.push(raw.slice(start, end + 1));
+    candidates.push(raw.slice(start));
+    let lastErr;
+    for (const c of candidates) {
+      try { return JSON.parse(c); } catch (e) { lastErr = e; }
+      try { return JSON.parse(repairJson(c)); } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new SyntaxError("unparseable model output");
   }
 
   /* ---------- outline generation ---------- */
@@ -182,7 +242,7 @@
       try {
         return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
       } catch (e2) {
-        const err = new Error(t("err.badJson"));
+        const err = new Error(lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
         err.rawOutput = raw;
         throw err;
       }

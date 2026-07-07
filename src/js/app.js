@@ -65,6 +65,7 @@
       onStatus("");
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
+        SF.toast(e.message, "error", 10000);
         $("#json-fix-area").value = e.rawOutput;
         $("#dlg-jsonfix").showModal();
       } else {
