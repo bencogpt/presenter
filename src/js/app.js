@@ -63,15 +63,16 @@
       if (state.config.fluxBase && outline.slides.some((s) => s.image_prompt)) SF.visuals.openDialog();
     } catch (e) {
       onStatus("");
+      /* always leave a persistent note in the sidebar error box (the toast
+         and dialog can be dismissed; this stays until the next attempt) */
+      errBox.hidden = false;
+      $("#gen-error-msg").textContent = e.message;
+      $("#gen-error-detail").textContent = e.rawOutput || e.detail || "—";
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
         SF.toast(e.message, "error", 10000);
         $("#json-fix-area").value = e.rawOutput;
         $("#dlg-jsonfix").showModal();
-      } else {
-        errBox.hidden = false;
-        $("#gen-error-msg").textContent = e.message;
-        $("#gen-error-detail").textContent = e.detail || "—";
       }
     } finally {
       clearInterval(ticker);
