@@ -65,6 +65,16 @@ try {
   await page.waitForFunction(() => document.querySelector("#doc-preview").value.includes("Report"));
   check("txt upload extracted into trim view", true);
 
+  console.log("3b. docx + pdf extraction (mammoth / pdf.js)");
+  await page.setInputFiles("#file-input", "test/fixtures/sample.docx");
+  await page.waitForFunction(() => document.querySelector("#doc-preview").value.includes("Docx Ingestion Report"), { timeout: 15000 });
+  const docxText = await page.inputValue("#doc-preview");
+  check("docx heading preserved as structure hint", docxText.includes("# Docx Ingestion Report"));
+  check("docx body extracted", docxText.includes("99.95"));
+  await page.setInputFiles("#file-input", "test/fixtures/sample.pdf");
+  await page.waitForFunction(() => document.querySelector("#doc-preview").value.includes("PDF Ingestion Report"), { timeout: 20000 });
+  check("pdf text extracted via inlined worker", (await page.inputValue("#doc-preview")).includes("sixty percent"));
+
   console.log("4. generate → cards in sidebar + live preview in main stage");
   await page.click("#btn-generate");
   await page.waitForSelector("#side-slides:not([hidden])", { timeout: 20000 });
@@ -89,6 +99,10 @@ try {
   check("live preview picked up new slide", true);
   await page.click("#btn-undo");
   check("undo removes added slide", (await page.locator(".slide-card").count()) === 5);
+  await page.click("#btn-redo");
+  check("redo restores added slide", (await page.locator(".slide-card").count()) === 6);
+  await page.click("#btn-undo");
+  check("undo again back to 5", (await page.locator(".slide-card").count()) === 5);
   await page.locator(".slide-card").nth(2).click();
   await page.waitForTimeout(1200);
   const idxAfterClick = await page.evaluate(() => SF.render.getDeck().getIndices().h);
@@ -137,6 +151,26 @@ try {
   check("project format + 5 slides", proj.format === "slideforge-project" && proj.outline.slides.length === 5);
   check("project has no tokens", !JSON.stringify(proj).includes("test-token"));
 
+  console.log("6c. export with live interactive charts");
+  await page.check("#exp-live-charts");
+  await page.uncheck("#exp-kiosk");
+  const [liveDl] = await Promise.all([page.waitForEvent("download"), page.click("#btn-export-deck")]);
+  const livePath = join(tmp, "deck-live.html");
+  await liveDl.saveAs(livePath);
+  const liveHtml = readFileSync(livePath, "utf8");
+  check("live deck embeds Chart.js + specs", liveHtml.includes("data-sf-chart-spec") && liveHtml.includes("__sfChartCfg"));
+  const livePage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await livePage.goto("file://" + livePath);
+  await livePage.waitForSelector("section.present", { timeout: 10000 });
+  const liveChartPainted = await livePage.evaluate(() => {
+    const cv = document.querySelector("canvas[data-sf-chart-spec]");
+    return !!cv && cv.toDataURL().length > 2000;
+  });
+  check("live chart rendered offline in exported deck", liveChartPainted);
+  await livePage.close();
+  await page.uncheck("#exp-live-charts");
+  await page.check("#exp-kiosk");
+
   console.log("7. exported deck opens standalone (file://) and presents");
   const deckPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   deckPage.on("pageerror", (e) => { console.log("  ✘ deck page error: " + e.message); failures++; });
@@ -157,10 +191,34 @@ try {
 
   console.log("8. project re-import round-trip");
   await page.setInputFiles("#project-input", projPath);
-  await page.waitForFunction(() => document.querySelectorAll(".slide-card").length === 5, { timeout: 10000 });
-  check("project import restores slides", true);
-  check("export dialog closed after import", !(await page.isVisible("#dlg-export")));
+  await page.waitForFunction(() => !document.querySelector("#dlg-export").open, { timeout: 10000 }); // import closes the dialog when done
+  check("export dialog closed after import", true);
+  check("project import restores slides", (await page.locator(".slide-card").count()) === 5);
+  check("hidden-slide flag survives project round-trip", await page.locator(".slide-card").nth(4).evaluate((n) => n.classList.contains("skipped")));
   check("deck options restored from project", (await page.inputValue("#deck-transition")) === "fade" && (await page.isChecked("#deck-fragments")));
+
+  console.log("8b. JSON mode sends response_format and still generates");
+  await page.click("#btn-open-settings");
+  await page.waitForSelector("#dlg-settings[open]");
+  await page.locator("#dlg-settings > details > summary").first().click(); // expand Advanced
+  await page.check("#cfg-json-mode");
+  await page.click("#btn-settings-done");
+  let sawResponseFormat = false;
+  await page.route("**/v1/chat/completions", (route) => {
+    try { const b = JSON.parse(route.request().postData() || "{}"); if (b.response_format && b.response_format.type === "json_object") sawResponseFormat = true; } catch (e) {}
+    route.continue();
+  });
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click(); // confirm regenerate
+  await page.waitForFunction(() => document.querySelector("#gen-status").textContent.includes("✔"), { timeout: 20000 });
+  check("generation succeeded in JSON mode", true);
+  check("request carried response_format json_object", sawResponseFormat);
+  await page.unroute("**/v1/chat/completions");
+  if (await page.isVisible("#dlg-visuals")) await page.click("#dlg-visuals [data-close]");
+  await page.click("#btn-open-settings");
+  await page.waitForSelector("#dlg-settings[open]");
+  await page.uncheck("#cfg-json-mode"); // Advanced still expanded from above
+  await page.click("#btn-settings-done");
 
   console.log("9. Hebrew UI (RTL)");
   await page.click("#btn-lang");

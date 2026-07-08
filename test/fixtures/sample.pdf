@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 461 >>
+stream
+BT /F1 14 Tf 60 720 Td (PDF Ingestion Report for SlideForge Offline verification purposes.) Tj 0 -22 Td (This page verifies that PDF text extraction works via pdf.js in the app.) Tj 0 -22 Td (Quarterly uptime figures were 99.1, 99.5, 99.8 and 99.95 percent respectively.) Tj 0 -22 Td (Deployment speed improved by sixty percent after migrating forty services.) Tj 0 -22 Td (The platform team plans GPU rollout and quarterly security audits next.) Tj 0 -22 Td ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000753 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+823
+%%EOF

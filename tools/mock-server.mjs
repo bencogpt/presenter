@@ -108,7 +108,9 @@ createServer(async (req, res) => {
       slide.title = "Regenerated: " + (slide.title || "slide");
       content = JSON.stringify(slide);
     } else if (/pong/i.test(userMsg)) content = "pong";
-    else {
+    else if (body.response_format && body.response_format.type === "json_object") {
+      content = JSON.stringify(OUTLINE); // guided decoding → clean JSON
+    } else {
       /* deliberately messy, like real reasoning models: <think> with braces,
          fenced JSON with a trailing comma, prose after the fence */
       const withTrailingComma = JSON.stringify(OUTLINE).replace(/\]\}$/, "],}");
