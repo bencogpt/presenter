@@ -45,6 +45,8 @@
     const dir = slideDir(slide, outline);
     const sec = el("section", { class: `sf-slide sf-l-${slide.layout}`, "data-sf-id": slide.id, dir });
     if (slide.skip) sec.setAttribute("data-visibility", "hidden"); // reveal.js skips it in navigation
+    /* decorative shape layers — invisible unless the active theme styles them */
+    for (const d of ["a", "b", "c"]) sec.appendChild(el("div", { class: "sf-deco sf-deco-" + d, "aria-hidden": "true" }));
     const frag = !!(state.deckOpts.fragments && !opts.noFragments);
     const H = (tag, text) => { const h = el(tag, { dir }); h.appendChild(SF.richTextNode(text)); return h; };
 
@@ -118,6 +120,13 @@
       }
     }
 
+    /* footer with the deck title on content slides (template-style) */
+    if (!["title", "section", "image_full"].includes(slide.layout) && outline && outline.title) {
+      const foot = el("div", { class: "sf-footer", dir: "auto" });
+      foot.appendChild(SF.richTextNode(outline.title));
+      sec.appendChild(foot);
+    }
+
     if (slide.notes) {
       const aside = el("aside", { class: "notes" });
       aside.appendChild(SF.richTextNode(slide.notes));
@@ -138,7 +147,12 @@
     if (hasAutoTitle()) {
       frag.appendChild(buildSlideSection({ id: "auto_title", layout: "title", title: o.title, bullets: o.subtitle ? [o.subtitle] : [], notes: "", image_prompt: null, chart_spec: null }, o, opts));
     }
-    for (const s of o.slides) frag.appendChild(buildSlideSection(s, o, opts));
+    let sectionNo = 0;
+    for (const s of o.slides) {
+      const sec = buildSlideSection(s, o, opts);
+      if (s.layout === "section") sec.setAttribute("data-sf-section", String(++sectionNo).padStart(2, "0"));
+      frag.appendChild(sec);
+    }
     return frag;
   }
 

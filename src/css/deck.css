@@ -7,7 +7,15 @@
 
 /* ---------- THEMES (CSS variable blocks) ----------
    ORG CUSTOM THEME: copy one block, change the values, and add a
-   matching <option> in the theme selectors. Keep WCAG AA contrast. */
+   matching <option> in the theme selector. Keep WCAG AA contrast.
+   Variables:
+     --sf-bg / --sf-ink / --sf-muted     base slide colors
+     --sf-accent / --sf-accent2 / --sf-accent3   brand colors
+     --sf-title-bg / --sf-title-ink      title-slide background & text
+     --sf-divider-bg / --sf-divider-ink  section-divider background & text
+     --sf-card-bg                        soft panel behind charts
+     --sf-deco1..3                       decorative shape colors        */
+
 .reveal-viewport[data-sf-theme="corporate"], .sf-themed[data-sf-theme="corporate"] {
   --sf-bg: #ffffff;
   --sf-bg-accent: #eef3fc;
@@ -15,10 +23,17 @@
   --sf-muted: #4a5872;
   --sf-accent: #2456d6;
   --sf-accent2: #0e9488;
+  --sf-accent3: #f2a33c;
+  --sf-title-bg: linear-gradient(135deg, #eef3fc 0%, #ffffff 55%);
   --sf-title-ink: #16233c;
+  --sf-heading-ink: #16233c;
   --sf-divider-bg: linear-gradient(135deg, #2456d6 0%, #123176 100%);
   --sf-divider-ink: #ffffff;
   --sf-quote-ink: #2456d6;
+  --sf-card-bg: #f6f8fd;
+  --sf-deco1: rgba(36, 86, 214, .10);
+  --sf-deco2: rgba(14, 148, 136, .12);
+  --sf-deco3: rgba(242, 163, 60, .16);
 }
 .reveal-viewport[data-sf-theme="dark"], .sf-themed[data-sf-theme="dark"] {
   --sf-bg: #12161f;
@@ -27,10 +42,17 @@
   --sf-muted: #a9b3c6;
   --sf-accent: #6f9dff;
   --sf-accent2: #4dd0c0;
+  --sf-accent3: #ffb454;
+  --sf-title-bg: radial-gradient(1000px 600px at 80% 10%, #1c2f5e 0%, #12161f 60%);
   --sf-title-ink: #ffffff;
+  --sf-heading-ink: #ffffff;
   --sf-divider-bg: linear-gradient(135deg, #1c2f5e 0%, #0c1220 100%);
   --sf-divider-ink: #ffffff;
   --sf-quote-ink: #8fb2ff;
+  --sf-card-bg: #1a2130;
+  --sf-deco1: rgba(111, 157, 255, .14);
+  --sf-deco2: rgba(77, 208, 192, .12);
+  --sf-deco3: rgba(255, 180, 84, .12);
 }
 .reveal-viewport[data-sf-theme="contrast"], .sf-themed[data-sf-theme="contrast"] {
   --sf-bg: #000000;
@@ -39,10 +61,57 @@
   --sf-muted: #e8e8e8;
   --sf-accent: #ffd400;
   --sf-accent2: #ffd400;
+  --sf-accent3: #ffd400;
+  --sf-title-bg: #000000;
   --sf-title-ink: #ffd400;
+  --sf-heading-ink: #ffd400;
   --sf-divider-bg: #000000;
   --sf-divider-ink: #ffd400;
   --sf-quote-ink: #ffd400;
+  --sf-card-bg: #101010;
+  --sf-deco1: transparent; /* no decorations: maximum readability */
+  --sf-deco2: transparent;
+  --sf-deco3: transparent;
+}
+/* Slidesgo-inspired: warm pastel canvas, coral/teal/mustard shapes, playful */
+.reveal-viewport[data-sf-theme="creative"], .sf-themed[data-sf-theme="creative"] {
+  --sf-bg: #fff8f0;
+  --sf-bg-accent: #ffefdd;
+  --sf-ink: #2d2a32;
+  --sf-muted: #6b6572;
+  --sf-accent: #ff6b5e;
+  --sf-accent2: #17b8a6;
+  --sf-accent3: #ffc145;
+  --sf-title-bg: #fff3e4;
+  --sf-title-ink: #2d2a32;
+  --sf-heading-ink: #2d2a32;
+  --sf-divider-bg: linear-gradient(120deg, #ff6b5e 0%, #ff9d5c 100%);
+  --sf-divider-ink: #fffdf9;
+  --sf-quote-ink: #ff6b5e;
+  --sf-card-bg: #ffffff;
+  --sf-deco1: #ffd9c7;
+  --sf-deco2: #bfe8e2;
+  --sf-deco3: #ffe4a8;
+}
+/* Slidesgo-inspired: vivid purple→pink gradient, crisp white content slides */
+.reveal-viewport[data-sf-theme="gradient"], .sf-themed[data-sf-theme="gradient"] {
+  --sf-bg: #fdfbff;
+  --sf-bg-accent: #f3ecfe;
+  --sf-ink: #241b3a;
+  --sf-muted: #665e79;
+  --sf-accent: #7b2ff7;
+  --sf-accent2: #f72f8e;
+  --sf-accent3: #2fb7f7;
+  --sf-title-bg: linear-gradient(120deg, #6721e8 0%, #a02fe0 55%, #f72f8e 100%);
+  --sf-title-ink: #ffffff;
+  --sf-heading-ink: #241b3a;
+  --sf-divider-bg: linear-gradient(120deg, #6721e8 0%, #f72f8e 100%);
+  --sf-divider-ink: #ffffff;
+  --sf-quote-ink: #7b2ff7;
+  --sf-card-bg: #f8f4fe;
+  --sf-deco1: rgba(123, 47, 247, .14);
+  --sf-deco2: rgba(247, 47, 142, .13);
+  --sf-deco3: rgba(47, 183, 247, .16);
 }
 
 .reveal-viewport { background: var(--sf-bg); }
@@ -62,9 +131,10 @@
   width: 100%; height: 720px;
   padding: 40px 60px;
   text-align: left;
+  background: var(--sf-bg);
 }
-.reveal h1, .reveal h2 { font-weight: 700; letter-spacing: -0.015em; margin: 0 0 0.5em; color: var(--sf-title-ink); }
-.reveal h1 { font-size: 1.9em; }
+.reveal h1, .reveal h2 { font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.5em; color: var(--sf-heading-ink); }
+.reveal h1 { font-size: 1.9em; font-weight: 900; }
 .reveal h2 { font-size: 1.35em; }
 .reveal ul { list-style: none; padding: 0; margin: 0; }
 .reveal li { margin: 0.45em 0; padding-left: 1.1em; position: relative; }
@@ -77,6 +147,14 @@
 .reveal code { font-size: .85em; background: var(--sf-bg-accent); border-radius: 6px; padding: 0 .2em; }
 .reveal img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 
+/* alternate bullet markers per theme for a friendlier look */
+.reveal-viewport[data-sf-theme="creative"] li::before { content: "●"; font-size: .55em; top: .45em; }
+.reveal-viewport[data-sf-theme="creative"] li:nth-child(2)::before { color: var(--sf-accent2); }
+.reveal-viewport[data-sf-theme="creative"] li:nth-child(3)::before { color: var(--sf-accent3); }
+.reveal-viewport[data-sf-theme="creative"] li:nth-child(5)::before { color: var(--sf-accent2); }
+.reveal-viewport[data-sf-theme="gradient"] li::before { content: "◆"; font-size: .6em; top: .4em; }
+.reveal-viewport[data-sf-theme="gradient"] li:nth-child(even)::before { color: var(--sf-accent2); }
+
 /* accent bar on standard slides — scoped to real sections because reveal.js
    mirrors slide classes onto its .slide-background elements */
 .reveal .slides section.sf-slide::after {
@@ -86,40 +164,146 @@
 .reveal .slides section[dir="rtl"].sf-slide::after { left: auto; right: 60px; }
 .reveal .slides section.sf-l-title::after, .reveal .slides section.sf-l-section::after,
 .reveal .slides section.sf-l-image_full::after, .reveal .slides section.sf-l-quote::after { display: none; }
+.reveal-viewport[data-sf-theme="gradient"] .slides section.sf-slide::after {
+  background: linear-gradient(90deg, var(--sf-accent), var(--sf-accent2));
+}
+.reveal-viewport[data-sf-theme="creative"] .slides section.sf-slide::after {
+  height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg, var(--sf-accent) 0 34%, var(--sf-accent3) 34% 67%, var(--sf-accent2) 67% 100%);
+}
+
+/* ---------- decorative shape layers (Slidesgo-style, CSS only) ----------
+   Three absolutely-positioned divs per slide; invisible by default, styled
+   per theme. pointer-events:none, behind the content. */
+.sf-deco { display: none; position: absolute; pointer-events: none; z-index: 0; }
+/* in-flow content gets position:relative so it stacks above the decorations;
+   absolutely-positioned parts keep their positioning and just get a z-index */
+.sf-slide > h1, .sf-slide > h2, .sf-slide > ul, .sf-slide > blockquote,
+.sf-slide > .sf-subtitle, .sf-slide > .sf-attribution { position: relative; z-index: 1; }
+.sf-slide > .sf-body, .sf-slide > .sf-chart-box, .sf-slide > .sf-footer,
+.sf-slide > .sf-img-cover, .sf-l-image_full > h2 { z-index: 1; }
+
+/* creative: blob top-right, ring bottom-left, dot grid */
+.reveal-viewport[data-sf-theme="creative"] .sf-deco,
+.sf-themed[data-sf-theme="creative"] .sf-deco { display: block; }
+.reveal-viewport[data-sf-theme="creative"] .sf-deco-a, .sf-themed[data-sf-theme="creative"] .sf-deco-a {
+  width: 340px; height: 340px; top: -120px; right: -100px;
+  background: var(--sf-deco1);
+  border-radius: 61% 39% 52% 48% / 55% 51% 49% 45%;
+}
+.reveal-viewport[data-sf-theme="creative"] .sf-deco-b, .sf-themed[data-sf-theme="creative"] .sf-deco-b {
+  width: 230px; height: 230px; bottom: -90px; left: -70px;
+  background: transparent; border: 26px solid var(--sf-deco2); border-radius: 50%;
+}
+.reveal-viewport[data-sf-theme="creative"] .sf-deco-c, .sf-themed[data-sf-theme="creative"] .sf-deco-c {
+  width: 180px; height: 120px; bottom: 46px; right: 70px;
+  background-image: radial-gradient(circle, var(--sf-accent3) 4px, transparent 4.5px);
+  background-size: 26px 26px; opacity: .8;
+}
+
+/* gradient: soft tinted discs + slim diagonal */
+.reveal-viewport[data-sf-theme="gradient"] .sf-deco,
+.sf-themed[data-sf-theme="gradient"] .sf-deco { display: block; }
+.reveal-viewport[data-sf-theme="gradient"] .sf-deco-a, .sf-themed[data-sf-theme="gradient"] .sf-deco-a {
+  width: 420px; height: 420px; top: -190px; right: -150px;
+  background: radial-gradient(circle at 30% 70%, var(--sf-deco1), transparent 70%);
+  border-radius: 50%;
+}
+.reveal-viewport[data-sf-theme="gradient"] .sf-deco-b, .sf-themed[data-sf-theme="gradient"] .sf-deco-b {
+  width: 260px; height: 260px; bottom: -120px; left: -80px;
+  background: radial-gradient(circle at 70% 30%, var(--sf-deco2), transparent 70%);
+  border-radius: 50%;
+}
+.reveal-viewport[data-sf-theme="gradient"] .sf-deco-c, .sf-themed[data-sf-theme="gradient"] .sf-deco-c {
+  width: 130px; height: 130px; top: 60px; right: 120px;
+  background: transparent; border: 3px solid var(--sf-deco3); border-radius: 50%;
+}
+
+/* subtle corner accents for corporate/dark too (kept faint) */
+.reveal-viewport[data-sf-theme="corporate"] .sf-deco-a, .sf-themed[data-sf-theme="corporate"] .sf-deco-a,
+.reveal-viewport[data-sf-theme="dark"] .sf-deco-a, .sf-themed[data-sf-theme="dark"] .sf-deco-a {
+  display: block; width: 300px; height: 300px; top: -140px; right: -120px;
+  background: var(--sf-deco1); border-radius: 50%;
+}
 
 /* ---------- layouts ---------- */
-.sf-slide .sf-body { position: absolute; top: 200px; left: 60px; right: 60px; bottom: 40px; }
+.sf-slide .sf-body { position: absolute; top: 200px; left: 60px; right: 60px; bottom: 60px; }
 
 /* title */
-.reveal .slides section.sf-l-title { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-.sf-l-title h1 { font-size: 2.3em; margin-bottom: .2em; }
-.sf-l-title .sf-subtitle { font-size: 1.1em; color: var(--sf-muted); }
+.reveal .slides section.sf-l-title {
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+  background: var(--sf-title-bg);
+}
+.sf-l-title h1 { font-size: 2.3em; margin-bottom: .25em; color: var(--sf-title-ink); }
+.sf-l-title .sf-subtitle {
+  font-size: .85em; font-weight: 600; color: var(--sf-title-ink);
+  background: color-mix(in srgb, var(--sf-title-ink) 10%, transparent);
+  border: 2px solid color-mix(in srgb, var(--sf-title-ink) 25%, transparent);
+  padding: .35em 1.1em; border-radius: 999px;
+}
+/* bigger, bolder decorations on the title slide */
+.reveal-viewport[data-sf-theme="creative"] .sf-l-title .sf-deco-a { width: 460px; height: 460px; top: -150px; right: -130px; background: var(--sf-deco3); }
+.reveal-viewport[data-sf-theme="creative"] .sf-l-title .sf-deco-b { border-color: var(--sf-deco1); }
+.reveal-viewport[data-sf-theme="gradient"] .sf-l-title .sf-deco-a { background: radial-gradient(circle at 30% 70%, rgba(255,255,255,.28), transparent 70%); }
+.reveal-viewport[data-sf-theme="gradient"] .sf-l-title .sf-deco-b { background: radial-gradient(circle at 70% 30%, rgba(255,255,255,.18), transparent 70%); }
+.reveal-viewport[data-sf-theme="gradient"] .sf-l-title .sf-deco-c { border-color: rgba(255,255,255,.5); }
+.reveal-viewport[data-sf-theme="gradient"] .sf-l-title .sf-subtitle { color: #fff; background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.45); }
 
-/* section divider */
-.reveal .slides section.sf-l-section { display: flex; flex-direction: column; justify-content: center; background: var(--sf-divider-bg); }
-.sf-l-section h2 { color: var(--sf-divider-ink); font-size: 2em; margin: 0; }
+/* section divider — full color + oversized number */
+.reveal .slides section.sf-l-section {
+  display: flex; flex-direction: column; justify-content: center;
+  background: var(--sf-divider-bg);
+}
+.sf-l-section h2 { color: var(--sf-divider-ink); font-size: 2em; margin: 0; font-weight: 900; }
+.sf-l-section::before {
+  content: attr(data-sf-section);
+  position: absolute; top: 20px; inset-inline-end: 50px;
+  font-size: 9em; font-weight: 900; line-height: 1;
+  color: color-mix(in srgb, var(--sf-divider-ink) 18%, transparent);
+  z-index: 0;
+}
 
-/* bullets + image (side by side) */
+/* bullets + image (side by side) — organic framed image */
 .sf-l-bullets_image .sf-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 44px; align-items: center; }
-.sf-l-bullets_image .sf-img-box { width: 100%; height: 100%; max-height: 460px; display: flex; align-items: center; justify-content: center; }
-.sf-l-bullets_image .sf-img-box img { object-fit: contain; max-height: 460px; }
+.sf-l-bullets_image .sf-img-box { position: relative; width: 100%; height: 100%; max-height: 440px; display: flex; align-items: center; justify-content: center; }
+.sf-l-bullets_image .sf-img-box img {
+  object-fit: cover; width: 92%; height: 92%; max-height: 420px;
+  border-radius: 24px;
+  box-shadow: 0 14px 40px rgba(20, 20, 40, .16);
+}
+/* offset color plate behind the image */
+.sf-l-bullets_image .sf-img-box::before {
+  content: ""; position: absolute; width: 92%; height: 92%; max-height: 420px;
+  border-radius: 24px; background: var(--sf-accent2); opacity: .35;
+  transform: translate(20px, 20px); z-index: -1;
+}
+.reveal-viewport[data-sf-theme="creative"] .sf-l-bullets_image .sf-img-box img,
+.reveal-viewport[data-sf-theme="creative"] .sf-l-bullets_image .sf-img-box::before {
+  border-radius: 58% 42% 45% 55% / 48% 55% 45% 52%; /* organic blob frame */
+}
 .sf-img-placeholder {
-  width: 100%; height: 100%; border: 3px dashed var(--sf-muted); border-radius: 12px; opacity: .5;
+  width: 92%; height: 300px; border: 3px dashed var(--sf-muted); border-radius: 24px; opacity: .5;
   display: flex; align-items: center; justify-content: center; font-size: .45em; text-align: center; padding: 20px;
 }
 
 /* image full */
 .reveal .slides section.sf-l-image_full { overflow: hidden; padding: 0; }
-.sf-l-image_full .sf-img-cover { position: absolute; inset: 0; }
+.sf-l-image_full .sf-img-cover { position: absolute; inset: 0; z-index: 0; }
 .sf-l-image_full .sf-img-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
 .sf-l-image_full h2 {
-  position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 30px 40px;
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 30px 60px;
   background: linear-gradient(transparent, rgba(0,0,0,.72)); color: #fff; font-size: 1.4em;
 }
 
-/* chart */
-.sf-l-chart .sf-chart-box { position: absolute; top: 200px; left: 60px; right: 60px; bottom: 50px; }
-.sf-l-chart canvas, .sf-l-chart img.sf-chart-png { width: 100% !important; height: 100% !important; object-fit: contain; }
+/* chart — soft card behind the canvas */
+.sf-l-chart .sf-chart-box {
+  position: absolute; top: 200px; left: 60px; right: 60px; bottom: 60px;
+  background: var(--sf-card-bg); border-radius: 20px; padding: 24px;
+  box-shadow: 0 10px 30px rgba(20, 20, 40, .08);
+}
+.sf-l-chart canvas, .sf-l-chart img.sf-chart-png {
+  width: 100% !important; height: 100% !important; object-fit: contain;
+}
 
 /* two column */
 .sf-l-two_column .sf-body { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
@@ -127,11 +311,19 @@
 /* quote */
 .reveal .slides section.sf-l-quote { display: flex; flex-direction: column; justify-content: center; padding: 40px 120px; }
 .sf-l-quote blockquote {
-  margin: 0; padding: 0; font-size: 1.5em; font-weight: 600; color: var(--sf-quote-ink); border: none; line-height: 1.4;
+  margin: 0; padding: 0; font-size: 1.5em; font-weight: 700; color: var(--sf-quote-ink); border: none; line-height: 1.4;
   background: none; box-shadow: none; width: auto; max-width: none; font-style: normal;
 }
-.sf-l-quote blockquote::before { content: "“"; display: block; font-size: 2.2em; line-height: .6; opacity: .35; }
-.sf-l-quote .sf-attribution { padding-top: 26px; color: var(--sf-muted); font-size: .8em; }
+.sf-l-quote blockquote::before { content: "“"; display: block; font-size: 2.6em; line-height: .55; opacity: .3; font-weight: 900; }
+.sf-l-quote .sf-attribution { padding-top: 26px; color: var(--sf-muted); font-size: .8em; font-weight: 600; }
+
+/* ---------- footer (deck title, like template page footers) ---------- */
+.sf-footer {
+  position: absolute; bottom: 22px; inset-inline-start: 60px;
+  font-size: 20px; font-weight: 600; letter-spacing: .04em;
+  color: var(--sf-muted); opacity: .85; z-index: 1;
+}
+.sf-footer::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: var(--sf-accent); margin-inline-end: 10px; vertical-align: -1px; }
 
 /* slide numbers */
 .reveal .slide-number { background: transparent; color: var(--sf-muted); font-size: 22px; right: 18px; bottom: 12px; }

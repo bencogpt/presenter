@@ -76,11 +76,7 @@
     const chartHelper = opts.liveCharts ? scriptSafe(
       "window.__sfChartCfg = function (spec) { return (" + SF.charts.toChartJsConfig.toString() +
       ")(spec, " + JSON.stringify(state.theme) + ", { fontSize: 22 }); };\n" +
-      "var THEME_CHART = " + JSON.stringify({
-        corporate: { ink: "#16233c", grid: "rgba(22,35,60,.12)", palette: ["#2456d6", "#0e9488", "#d97706", "#7c3aed", "#be185d", "#4d7c0f"] },
-        dark: { ink: "#edf0f6", grid: "rgba(237,240,246,.14)", palette: ["#6f9dff", "#4dd0c0", "#ffb454", "#c4a5ff", "#ff8fab", "#a3d977"] },
-        contrast: { ink: "#ffffff", grid: "rgba(255,255,255,.28)", palette: ["#ffd400", "#00e5ff", "#ff6ec7", "#7CFC00", "#ff9e00", "#ffffff"] },
-      }) + ";") : "";
+      "var THEME_CHART = " + JSON.stringify(SF.charts.THEME_CHART) + ";") : "";
 
     return [
       "<!doctype html>",
@@ -169,7 +165,7 @@
       }
       state.outline = outline;
       state.assets = assets;
-      state.theme = ["corporate", "dark", "contrast"].includes(json.theme) ? json.theme : "corporate";
+      state.theme = ["corporate", "dark", "contrast", "creative", "gradient"].includes(json.theme) ? json.theme : "corporate";
       const dOpts = json.deckOpts && typeof json.deckOpts === "object" ? json.deckOpts : {};
       state.deckOpts = {
         transition: ["slide", "fade", "convex", "zoom", "none"].includes(dOpts.transition) ? dOpts.transition : "slide",

@@ -6,6 +6,8 @@
     corporate: { ink: "#16233c", grid: "rgba(22,35,60,.12)", palette: ["#2456d6", "#0e9488", "#d97706", "#7c3aed", "#be185d", "#4d7c0f"] },
     dark:      { ink: "#edf0f6", grid: "rgba(237,240,246,.14)", palette: ["#6f9dff", "#4dd0c0", "#ffb454", "#c4a5ff", "#ff8fab", "#a3d977"] },
     contrast:  { ink: "#ffffff", grid: "rgba(255,255,255,.28)", palette: ["#ffd400", "#00e5ff", "#ff6ec7", "#7CFC00", "#ff9e00", "#ffffff"] },
+    creative:  { ink: "#2d2a32", grid: "rgba(45,42,50,.10)", palette: ["#ff6b5e", "#17b8a6", "#ffc145", "#7c6ff0", "#2d9cdb", "#e8618c"] },
+    gradient:  { ink: "#241b3a", grid: "rgba(36,27,58,.10)", palette: ["#7b2ff7", "#f72f8e", "#2fb7f7", "#f7a72f", "#27c39f", "#5d5fef"] },
   };
 
   function toChartJsConfig(spec, theme, opts) {
@@ -64,5 +66,5 @@
     return uri;
   }
 
-  SF.charts = { renderChart, chartToPngDataUri, toChartJsConfig };
+  SF.charts = { renderChart, chartToPngDataUri, toChartJsConfig, THEME_CHART };
 })(window.SF);

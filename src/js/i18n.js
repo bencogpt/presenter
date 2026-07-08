@@ -16,6 +16,7 @@
     "tb.clear": "Clear session (wipes tokens, document, outline, assets)",
     "tb.theme": "Theme",
     "theme.corporate": "Light corporate", "theme.dark": "Dark", "theme.contrast": "High contrast",
+    "theme.creative": "Pastel creative", "theme.gradient": "Bold gradient",
     "tb.lang": "עברית",
 
     /* banners */
@@ -209,6 +210,7 @@
     "tb.clear": "ניקוי הפעלה (מוחק טוקנים, מסמך, מתאר ותמונות)",
     "tb.theme": "ערכת עיצוב",
     "theme.corporate": "בהיר עסקי", "theme.dark": "כהה", "theme.contrast": "ניגודיות גבוהה",
+    "theme.creative": "פסטל יצירתי", "theme.gradient": "גרדיאנט נועז",
     "tb.lang": "English",
 
     "banner.unsupported": "הדפדפן חסר יכולות נדרשות (fetch, FileReader, structuredClone, canvas). יש להשתמש ב-Chromium ‏110 ומעלה או Firefox ‏110 ומעלה.",
