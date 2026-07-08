@@ -108,6 +108,16 @@ createServer(async (req, res) => {
       slide.title = "Regenerated: " + (slide.title || "slide");
       content = JSON.stringify(slide);
     } else if (/pong/i.test(userMsg)) content = "pong";
+    else if (/[\u0590-\u05FF]/.test(userMsg)) {
+      /* Hebrew document → Hebrew outline (RTL rendering coverage) */
+      content = JSON.stringify({
+        title: "סקירת תשתיות רבעונית", subtitle: "תדרוך צוות הפלטפורמה", language: "he",
+        slides: [
+          { id: "h1", layout: "title", title: "סקירת תשתיות רבעונית", bullets: ["תדרוך צוות הפלטפורמה"], notes: "", image_prompt: null, chart_spec: null },
+          { id: "h2", layout: "bullets", title: "הישגים מרכזיים", bullets: ["הגירת 40 שירותים לענן", "קיצור זמן פריסה ב-60 אחוז", "אפס השבתות לא מתוכננות"], notes: "", image_prompt: null, chart_spec: null },
+        ],
+      });
+    }
     else if (body.response_format && body.response_format.type === "json_object") {
       content = JSON.stringify(OUTLINE); // guided decoding → clean JSON
     } else {

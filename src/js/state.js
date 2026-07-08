@@ -17,7 +17,7 @@
       persistConfig: false, persistTokens: false,
     },
     doc: null,        // { name, text, chars, chunked }
-    gen: { slideCount: "auto", tone: "business", language: "auto", visuals: "light" },
+    gen: { slideCount: "auto", tone: "business", language: "auto", visuals: "light", source: "document" },
     outline: null,    // schema §5.1 (validated)
     assets: {},       // slideId -> { kind: "image"|"user_image", mime, b64 }
     theme: "corporate",

@@ -220,6 +220,59 @@ try {
   await page.uncheck("#cfg-json-mode"); // Advanced still expanded from above
   await page.click("#btn-settings-done");
 
+  console.log("8c. content-source modes change the request");
+  const prompts = [];
+  await page.route("**/v1/chat/completions", (route) => {
+    try { const b = JSON.parse(route.request().postData() || "{}"); prompts.push({ sys: b.messages[0].content, user: b.messages[b.messages.length - 1].content }); } catch (e) {}
+    route.continue();
+  });
+  await page.selectOption("#gen-source", "prompt");
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => document.querySelector("#gen-status").textContent.includes("✔"), { timeout: 20000 });
+  check("topic mode: system prompt switches to TOPIC MODE", prompts.some((m) => m.sys.includes("TOPIC MODE")));
+  check("topic mode: input labeled as BRIEF", prompts.some((m) => m.user.includes("<<<BRIEF")));
+  if (await page.isVisible("#dlg-visuals")) await page.click("#dlg-visuals [data-close]");
+  prompts.length = 0;
+  await page.selectOption("#gen-source", "document");
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => document.querySelector("#gen-status").textContent.includes("✔"), { timeout: 20000 });
+  check("document mode: STRICT SOURCE MODE in system prompt", prompts.some((m) => m.sys.includes("STRICT SOURCE MODE")));
+  check("document mode: input labeled as DOCUMENT", prompts.some((m) => m.user.includes("<<<DOCUMENT")));
+  await page.unroute("**/v1/chat/completions");
+  if (await page.isVisible("#dlg-visuals")) await page.click("#dlg-visuals [data-close]");
+
+  console.log("8d. Hebrew document → RTL slides");
+  await page.evaluate(() => { document.querySelector("#paste-fallback").open = true; });
+  await page.fill("#paste-area", "דוח תשתיות רבעוני. הצוות היגר ארבעים שירותים לענן וקיצר את זמן הפריסה בשישים אחוז. לא נרשמו השבתות לא מתוכננות ברבעון האחרון.");
+  await page.click("#btn-use-pasted");
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => document.querySelector("#gen-status").textContent.includes("✔"), { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll("#reveal-slides > section").length === 2, { timeout: 8000 });
+  const rtl = await page.evaluate(() => {
+    const sec = document.querySelector('#reveal-slides section.sf-l-bullets');
+    const li = sec && sec.querySelector("li");
+    return sec && li ? {
+      dir: sec.getAttribute("dir"),
+      align: getComputedStyle(sec).textAlign,
+      liDir: li.getAttribute("dir"),
+      markerRight: getComputedStyle(li, "::before").right !== "auto" && getComputedStyle(li).paddingRight !== "0px",
+    } : null;
+  });
+  check("Hebrew slide gets explicit dir=rtl", rtl && rtl.dir === "rtl", JSON.stringify(rtl));
+  check("Hebrew slide text right-aligned", rtl && rtl.align === "right");
+  check("bullets flip to the right side", rtl && rtl.liDir === "rtl" && rtl.markerRight);
+  /* export the Hebrew deck and confirm RTL carries into the standalone file */
+  await page.click("#btn-export");
+  await page.waitForSelector("#dlg-export[open]");
+  const [heDl] = await Promise.all([page.waitForEvent("download"), page.click("#btn-export-deck")]);
+  const hePath = join(tmp, "deck-he.html");
+  await heDl.saveAs(hePath);
+  check("exported Hebrew deck keeps dir=rtl sections", readFileSync(hePath, "utf8").includes('dir="rtl"'));
+  await page.click("#dlg-export .dlg-close");
+
   console.log("9. Hebrew UI (RTL)");
   await page.click("#btn-lang");
   await page.waitForTimeout(200);

@@ -70,7 +70,10 @@
 .reveal li { margin: 0.45em 0; padding-left: 1.1em; position: relative; }
 .reveal li::before { content: "▸"; color: var(--sf-accent); position: absolute; left: 0; }
 .reveal [dir="rtl"] li, .reveal li[dir="rtl"] { padding-left: 0; padding-right: 1.1em; }
-.reveal [dir="rtl"] li::before, .reveal li[dir="rtl"]::before { left: auto; right: 0; }
+.reveal [dir="rtl"] li::before, .reveal li[dir="rtl"]::before { left: auto; right: 0; content: "◂"; }
+/* whole-slide RTL: right-aligned text (centered layouts keep their centering) */
+.reveal .slides section.sf-slide[dir="rtl"] { text-align: right; }
+.reveal .slides section.sf-l-title[dir="rtl"] { text-align: center; }
 .reveal code { font-size: .85em; background: var(--sf-bg-accent); border-radius: 6px; padding: 0 .2em; }
 .reveal img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 

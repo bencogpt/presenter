@@ -50,6 +50,7 @@
         tone: $("#gen-tone").value,
         language: $("#gen-lang").value,
         visuals: $("#gen-visuals").value,
+        source: $("#gen-source").value,
       };
       const { outline, sourceText } = await SF.llm.generateOutline(state.doc.text, state.gen, onStatus);
       state.lastSourceText = sourceText;

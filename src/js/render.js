@@ -9,12 +9,19 @@
   const { $, el, state } = SF;
   let deck = null;
 
-  /* ---------- slide DOM construction (all content sanitized, spec §7.3) ---------- */
-  function bulletsList(bullets, dirAuto, fragments) {
+  /* ---------- slide DOM construction (all content sanitized, spec §7.3) ----------
+     Direction: dir="auto" only affects character order, not alignment, and
+     CSS [dir="rtl"] selectors don't match it — so each slide gets an explicit
+     computed dir (rtl/ltr) based on its own text (SF.isRtl heuristic). */
+  function slideDir(slide, outline) {
+    const text = [slide.title, ...(slide.bullets || []), (outline && outline.title) || ""].join(" ");
+    return SF.isRtl(text) ? "rtl" : "ltr";
+  }
+
+  function bulletsList(bullets, dir, fragments) {
     const ul = el("ul");
     for (const b of bullets) {
-      const li = el("li");
-      if (dirAuto) li.setAttribute("dir", "auto");
+      const li = el("li", { dir });
       if (fragments) li.classList.add("fragment");
       li.appendChild(SF.richTextNode(b));
       ul.appendChild(li);
@@ -35,26 +42,27 @@
    */
   function buildSlideSection(slide, outline, opts) {
     opts = opts || {};
-    const sec = el("section", { class: `sf-slide sf-l-${slide.layout}`, "data-sf-id": slide.id, dir: "auto" });
+    const dir = slideDir(slide, outline);
+    const sec = el("section", { class: `sf-slide sf-l-${slide.layout}`, "data-sf-id": slide.id, dir });
     if (slide.skip) sec.setAttribute("data-visibility", "hidden"); // reveal.js skips it in navigation
     const frag = !!(state.deckOpts.fragments && !opts.noFragments);
-    const H = (tag, text) => { const h = el(tag, { dir: "auto" }); h.appendChild(SF.richTextNode(text)); return h; };
+    const H = (tag, text) => { const h = el(tag, { dir }); h.appendChild(SF.richTextNode(text)); return h; };
 
     switch (slide.layout) {
       case "title": {
         sec.appendChild(H("h1", slide.title || outline.title));
         const sub = slide.bullets[0] || outline.subtitle;
-        if (sub) { const d = el("div", { class: "sf-subtitle", dir: "auto" }); d.appendChild(SF.richTextNode(sub)); sec.appendChild(d); }
+        if (sub) { const d = el("div", { class: "sf-subtitle", dir }); d.appendChild(SF.richTextNode(sub)); sec.appendChild(d); }
         break;
       }
       case "section":
         sec.appendChild(H("h2", slide.title));
         break;
       case "quote": {
-        const q = el("blockquote", { dir: "auto" });
+        const q = el("blockquote", { dir });
         q.appendChild(SF.richTextNode(slide.bullets[0] || slide.title));
         sec.appendChild(q);
-        if (slide.bullets[1]) { const a = el("div", { class: "sf-attribution", dir: "auto" }); a.appendChild(SF.richTextNode("— " + slide.bullets[1])); sec.appendChild(a); }
+        if (slide.bullets[1]) { const a = el("div", { class: "sf-attribution", dir }); a.appendChild(SF.richTextNode("— " + slide.bullets[1])); sec.appendChild(a); }
         break;
       }
       case "image_full": {
@@ -69,7 +77,7 @@
       case "bullets_image": {
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
-        body.appendChild(bulletsList(slide.bullets, true, frag));
+        body.appendChild(bulletsList(slide.bullets, dir, frag));
         const box = el("div", { class: "sf-img-box" });
         const img = imgNode(slide.id, slide.image_prompt);
         if (img) box.appendChild(img);
@@ -97,15 +105,15 @@
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
         const half = Math.ceil(slide.bullets.length / 2);
-        body.appendChild(bulletsList(slide.bullets.slice(0, half), true, frag));
-        body.appendChild(bulletsList(slide.bullets.slice(half), true, frag));
+        body.appendChild(bulletsList(slide.bullets.slice(0, half), dir, frag));
+        body.appendChild(bulletsList(slide.bullets.slice(half), dir, frag));
         sec.appendChild(body);
         break;
       }
       default: { // bullets
         sec.appendChild(H("h2", slide.title));
         const body = el("div", { class: "sf-body" });
-        body.appendChild(bulletsList(slide.bullets, true, frag));
+        body.appendChild(bulletsList(slide.bullets, dir, frag));
         sec.appendChild(body);
       }
     }
