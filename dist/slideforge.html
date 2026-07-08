@@ -1283,6 +1283,7 @@ window.SF = window.SF || {};
     "err.cancelled": "Cancelled.",
     "err.badJson": "The model did not produce valid outline JSON.",
     "err.truncated": "The model hit its output-token limit before finishing the outline. Raise “Max output tokens” in ⚙ Settings → Advanced (reasoning models need extra budget) and try again.",
+    "err.ctxOverflow": "The request exceeds the model's context window. In ⚙ Settings → Advanced: lower “Document character cap” (the document is then summarized in smaller sections) and/or lower “Max output tokens” — their sum must fit the model's window.",
     "err.fileTooBig": "File is {size} — max 20 MB.",
     "err.legacyDoc": "Legacy .doc isn't supported. Open it in Word and save as .docx, then retry.",
     "err.badType": "Unsupported file type .{ext} — use .docx, .pdf, .md or .txt",
@@ -1462,6 +1463,7 @@ window.SF = window.SF || {};
     "err.cancelled": "בוטל.",
     "err.badJson": "המודל לא הפיק JSON תקין למתאר.",
     "err.truncated": "המודל הגיע לתקרת טוקני הפלט לפני שסיים את המתאר. הגדילו את \"מקסימום טוקנים בפלט\" ב-⚙ הגדרות ← מתקדם (מודלים חושבים צריכים תקציב נוסף) ונסו שוב.",
+    "err.ctxOverflow": "הבקשה חורגת מחלון ההקשר של המודל. ב-⚙ הגדרות ← מתקדם: הקטינו את \"תקרת תווים למסמך\" (המסמך יסוכם אז בחלקים קטנים יותר) ו/או את \"מקסימום טוקנים בפלט\" — הסכום חייב להיכנס בחלון המודל.",
     "err.fileTooBig": "הקובץ שוקל {size} — המקסימום 20 MB.",
     "err.legacyDoc": "‎.doc ישן אינו נתמך. פתחו ב-Word ושמרו כ-‎.docx ונסו שוב.",
     "err.badType": "סוג קובץ לא נתמך ‎.{ext} — השתמשו ב-docx / pdf / md / txt.",
@@ -1992,6 +1994,13 @@ window.SF = window.SF || {};
     if (status === 401 || status === 403) {
       const e = new Error(t("err.tokenRejected", { status }));
       e.tokenProblem = true; e.detail = bodyText;
+      return e;
+    }
+    /* vLLM/OpenAI-style context overflow: prompt (+ max_tokens) exceeds the
+       model's window → tell the user which two knobs fix it */
+    if (status === 400 && /context.length|maximum.context|max_model_len|too many tokens|context window|maximum.*length is \d+ tokens/i.test(bodyText || "")) {
+      const e = new Error(t("err.ctxOverflow"));
+      e.detail = bodyText;
       return e;
     }
     const e = new Error(t("err.llmStatus", { status }));

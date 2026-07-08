@@ -273,6 +273,37 @@ try {
   check("exported Hebrew deck keeps dir=rtl sections", readFileSync(hePath, "utf8").includes('dir="rtl"'));
   await page.click("#dlg-export .dlg-close");
 
+  console.log("8e. large document (3000 notes ≈ 280k chars): chunked map-reduce");
+  await page.evaluate(() => {
+    let text = "";
+    for (let i = 0; i < 3000; i++) text += `Note ${i}: the platform team migrated service number ${i} and reduced deploy time measurably.\n\n`;
+    document.querySelector("#paste-fallback").open = true;
+    document.querySelector("#paste-area").value = text;
+  });
+  await page.click("#btn-use-pasted");
+  await page.waitForFunction(() => !document.querySelector("#chunk-notice").hidden, { timeout: 5000 });
+  check("over-cap notice shown for 280k chars", true);
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => document.querySelector("#gen-status").textContent.includes("✔"), { timeout: 60000 });
+  check("3000-note document → valid outline via chunked summarization", (await page.locator(".slide-card").count()) > 0);
+  if (await page.isVisible("#dlg-visuals")) await page.click("#dlg-visuals [data-close]");
+
+  console.log("8f. context overflow (cap raised past the model window) → actionable error");
+  await page.click("#btn-open-settings");
+  await page.waitForSelector("#dlg-settings[open]");
+  await page.fill("#cfg-char-cap", "400000"); // whole 280k doc now goes in ONE call → mock rejects like vLLM
+  await page.click("#btn-settings-done");
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => !document.querySelector("#gen-error").hidden, { timeout: 30000 });
+  const ctxMsg = await page.textContent("#gen-error-msg");
+  check("context-overflow explained with the two knobs to fix", ctxMsg.includes("context window"), ctxMsg);
+  await page.click("#btn-open-settings");
+  await page.waitForSelector("#dlg-settings[open]");
+  await page.fill("#cfg-char-cap", "60000");
+  await page.click("#btn-settings-done");
+
   console.log("9. Hebrew UI (RTL)");
   await page.click("#btn-lang");
   await page.waitForTimeout(200);

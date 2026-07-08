@@ -97,7 +97,13 @@ createServer(async (req, res) => {
     return res.end(JSON.stringify({ error: { message: "invalid token" } }));
   }
   if (req.url === "/v1/chat/completions") {
-    const body = JSON.parse(await readBody(req));
+    const raw = await readBody(req);
+    const body = JSON.parse(raw);
+    /* emulate a bounded context window: huge prompts are rejected like vLLM does */
+    if (raw.length > 120000) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: { message: "This model's maximum context length is 32768 tokens. However, you requested more tokens than that. Please reduce the length of the messages or completion.", type: "invalid_request_error" } }));
+    }
     const userMsg = (body.messages.find((m) => m.role === "user") || {}).content || "";
     const sysMsg = (body.messages.find((m) => m.role === "system") || {}).content || "";
     let content;

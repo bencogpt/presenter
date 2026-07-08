@@ -53,6 +53,13 @@
       e.tokenProblem = true; e.detail = bodyText;
       return e;
     }
+    /* vLLM/OpenAI-style context overflow: prompt (+ max_tokens) exceeds the
+       model's window → tell the user which two knobs fix it */
+    if (status === 400 && /context.length|maximum.context|max_model_len|too many tokens|context window|maximum.*length is \d+ tokens/i.test(bodyText || "")) {
+      const e = new Error(t("err.ctxOverflow"));
+      e.detail = bodyText;
+      return e;
+    }
     const e = new Error(t("err.llmStatus", { status }));
     e.detail = bodyText;
     return e;
