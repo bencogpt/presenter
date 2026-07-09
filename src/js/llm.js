@@ -37,6 +37,7 @@
   /* ---------- low-level fetch with timeout + one retry (spec FR-ERR-1) ---------- */
   let activeController = null;
   let lastFinishReason = null;
+  let lastRawBody = null; // last chat HTTP body — evidence for the Details expander
 
   async function rawFetch(url, opts, timeoutS) {
     const ctrl = new AbortController();
@@ -85,19 +86,24 @@
         headers: { "Content-Type": "application/json", ...(c.llmToken ? { Authorization: "Bearer " + c.llmToken } : {}) },
         body,
       }, opts.timeoutS);
-      if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
-      const json = await r.json();
+      const bodyText = await r.text().catch(() => "");
+      lastRawBody = bodyText.slice(0, 4000);
+      if (!r.ok) throw apiError(r.status, bodyText);
+      let json;
+      try { json = JSON.parse(bodyText); } catch (e) { throw Object.assign(new Error(t("err.llmShape")), { detail: lastRawBody }); }
       lastFinishReason = json && json.choices && json.choices[0] && json.choices[0].finish_reason || null;
-      const msg = json && json.choices && json.choices[0] && json.choices[0].message;
-      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      const choice = json && json.choices && json.choices[0];
+      const msg = choice && choice.message;
+      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: lastRawBody });
       /* Runtimes differ: content may be a string, null (token budget spent on
-         reasoning), or an array of content parts; some put text in
-         reasoning_content. Be liberal in what we accept. */
+         reasoning), or an array of content parts; reasoning may live in
+         reasoning_content / reasoning; completions-style runtimes use
+         choice.text. Be liberal in what we accept. */
       let content = msg.content;
       if (Array.isArray(content)) content = content.map((part) => (part && (part.text || part.content)) || "").join("");
       if (typeof content !== "string" || !content.trim()) {
-        if (typeof msg.reasoning_content === "string" && msg.reasoning_content.trim()) content = msg.reasoning_content;
-        else content = typeof content === "string" ? content : "";
+        const alt = [msg.reasoning_content, msg.reasoning, choice.text].find((v) => typeof v === "string" && v.trim());
+        content = alt || (typeof content === "string" ? content : "");
       }
       return content;
     };
@@ -248,6 +254,10 @@
       { role: "user", content: userPrompt(text, gen) },
     ];
     let raw = await chat(messages, { temperature: 0.4, jsonMode: true });
+    if (!raw.trim()) {
+      /* nothing came back at all — retrying with the same budget is pointless */
+      throw Object.assign(new Error(t("err.emptyAnswer")), { detail: lastRawBody });
+    }
     try {
       return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
     } catch (e1) {
@@ -260,8 +270,11 @@
       try {
         return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
       } catch (e2) {
-        const err = new Error(lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
-        err.rawOutput = raw;
+        const empty = !raw || !raw.trim();
+        const err = new Error(empty ? t("err.emptyAnswer")
+          : lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
+        if (!empty) err.rawOutput = raw;
+        err.detail = lastRawBody; /* Details always shows the real server response */
         throw err;
       }
     }

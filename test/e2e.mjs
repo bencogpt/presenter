@@ -304,6 +304,18 @@ try {
   await page.fill("#cfg-char-cap", "60000");
   await page.click("#btn-settings-done");
 
+  console.log("8g. empty model answer (reasoning budget spent) → explicit error + populated Details");
+  await page.evaluate(() => { document.querySelector("#paste-fallback").open = true; });
+  await page.fill("#paste-area", "EMPTYTEST — this input makes the mock model return content:null with finish_reason length, like a reasoning model that spent its whole budget thinking.");
+  await page.click("#btn-use-pasted");
+  await page.click("#btn-generate");
+  await page.locator("#modal-buttons .btn-primary").click();
+  await page.waitForFunction(() => !document.querySelector("#gen-error").hidden, { timeout: 30000 });
+  const emptyMsg = await page.textContent("#gen-error-msg");
+  check("empty-answer error names the cause and the fix", emptyMsg.includes("EMPTY answer") && emptyMsg.includes("Max output tokens"), emptyMsg);
+  const emptyDetail = await page.textContent("#gen-error-detail");
+  check("Details shows the raw server response, not a dash", emptyDetail.includes('"finish_reason"') && emptyDetail.includes("length"), emptyDetail.slice(0, 160));
+
   console.log("9. Hebrew UI (RTL)");
   await page.click("#btn-lang");
   await page.waitForTimeout(200);

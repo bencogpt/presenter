@@ -107,6 +107,11 @@ createServer(async (req, res) => {
     const userMsg = (body.messages.find((m) => m.role === "user") || {}).content || "";
     const sysMsg = (body.messages.find((m) => m.role === "system") || {}).content || "";
     let content;
+    if (/EMPTYTEST/.test(userMsg)) {
+      /* reasoning model that burned its whole budget: no content, no reasoning field */
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ id: "mock", object: "chat.completion", model: body.model, choices: [{ index: 0, message: { role: "assistant", content: null }, finish_reason: "length" }], usage: { completion_tokens: 8192 } }));
+    }
     if (/^You summarize document sections/.test(sysMsg)) content = "Summary: " + userMsg.slice(0, 300);
     else if (/ONE slide/i.test(sysMsg)) {
       const m = userMsg.match(/current JSON.:\s*(\{[\s\S]*?\})\n\nInstruction/);

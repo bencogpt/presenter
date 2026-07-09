@@ -5,7 +5,7 @@
 <!--
   ============================================================
   SlideForge Offline — air-gapped HTML presentation generator
-  Single-file build. Version: 1.0.0 (built 2026-07-08)
+  Single-file build. Version: 1.0.0 (built 2026-07-09)
   Regenerate with: node build/build.mjs   (see BUILD.md)
   ============================================================
 -->
@@ -15,7 +15,7 @@
      e.g. "https://llm.apps.internal https://flux.apps.internal", then redistribute. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; worker-src blob:; connect-src https: http:; form-action 'none'; base-uri 'none'">
 <title>SlideForge Offline</title>
-<meta name="sf-version" content="1.0.0 (2026-07-08)">
+<meta name="sf-version" content="1.0.0 (2026-07-09)">
 
 <script id="default-config">
 /* ============================================================
@@ -960,7 +960,7 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
 <div id="print-root" aria-hidden="true"></div>
 
 <footer id="app-footer">
-  <span>SlideForge Offline v1.0.0 · 2026-07-08</span>
+  <span>SlideForge Offline v1.0.0 · 2026-07-09</span>
 </footer>
 
 <div id="toast-region" aria-live="polite"></div>
@@ -1478,6 +1478,7 @@ window.SF = window.SF || {};
     "err.cancelled": "Cancelled.",
     "err.badJson": "The model did not produce valid outline JSON.",
     "err.truncated": "The model hit its output-token limit before finishing the outline. Raise “Max output tokens” in ⚙ Settings → Advanced (reasoning models need extra budget) and try again.",
+    "err.emptyAnswer": "The model returned an EMPTY answer — its whole token budget was likely spent on internal reasoning before any output. Raise “Max output tokens” in ⚙ Settings → Advanced (and tick “Remember settings”, otherwise it resets on reload). The raw server response is under Details.",
     "err.ctxOverflow": "The request exceeds the model's context window. In ⚙ Settings → Advanced: lower “Document character cap” (the document is then summarized in smaller sections) and/or lower “Max output tokens” — their sum must fit the model's window.",
     "err.fileTooBig": "File is {size} — max 20 MB.",
     "err.legacyDoc": "Legacy .doc isn't supported. Open it in Word and save as .docx, then retry.",
@@ -1659,6 +1660,7 @@ window.SF = window.SF || {};
     "err.cancelled": "בוטל.",
     "err.badJson": "המודל לא הפיק JSON תקין למתאר.",
     "err.truncated": "המודל הגיע לתקרת טוקני הפלט לפני שסיים את המתאר. הגדילו את \"מקסימום טוקנים בפלט\" ב-⚙ הגדרות ← מתקדם (מודלים חושבים צריכים תקציב נוסף) ונסו שוב.",
+    "err.emptyAnswer": "המודל החזיר תשובה ריקה — ככל הנראה כל תקציב הטוקנים נוצל על חשיבה פנימית לפני שנוצר פלט. הגדילו את \"מקסימום טוקנים בפלט\" ב-⚙ הגדרות ← מתקדם (וסמנו \"זכור הגדרות\", אחרת הערך מתאפס ברענון). תגובת השרת המלאה נמצאת תחת פרטים.",
     "err.ctxOverflow": "הבקשה חורגת מחלון ההקשר של המודל. ב-⚙ הגדרות ← מתקדם: הקטינו את \"תקרת תווים למסמך\" (המסמך יסוכם אז בחלקים קטנים יותר) ו/או את \"מקסימום טוקנים בפלט\" — הסכום חייב להיכנס בחלון המודל.",
     "err.fileTooBig": "הקובץ שוקל {size} — המקסימום 20 MB.",
     "err.legacyDoc": "‎.doc ישן אינו נתמך. פתחו ב-Word ושמרו כ-‎.docx ונסו שוב.",
@@ -2176,6 +2178,7 @@ window.SF = window.SF || {};
   /* ---------- low-level fetch with timeout + one retry (spec FR-ERR-1) ---------- */
   let activeController = null;
   let lastFinishReason = null;
+  let lastRawBody = null; // last chat HTTP body — evidence for the Details expander
 
   async function rawFetch(url, opts, timeoutS) {
     const ctrl = new AbortController();
@@ -2224,19 +2227,24 @@ window.SF = window.SF || {};
         headers: { "Content-Type": "application/json", ...(c.llmToken ? { Authorization: "Bearer " + c.llmToken } : {}) },
         body,
       }, opts.timeoutS);
-      if (!r.ok) throw apiError(r.status, await r.text().catch(() => ""));
-      const json = await r.json();
+      const bodyText = await r.text().catch(() => "");
+      lastRawBody = bodyText.slice(0, 4000);
+      if (!r.ok) throw apiError(r.status, bodyText);
+      let json;
+      try { json = JSON.parse(bodyText); } catch (e) { throw Object.assign(new Error(t("err.llmShape")), { detail: lastRawBody }); }
       lastFinishReason = json && json.choices && json.choices[0] && json.choices[0].finish_reason || null;
-      const msg = json && json.choices && json.choices[0] && json.choices[0].message;
-      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: JSON.stringify(json).slice(0, 2000) });
+      const choice = json && json.choices && json.choices[0];
+      const msg = choice && choice.message;
+      if (!msg || typeof msg !== "object") throw Object.assign(new Error(t("err.llmShape")), { detail: lastRawBody });
       /* Runtimes differ: content may be a string, null (token budget spent on
-         reasoning), or an array of content parts; some put text in
-         reasoning_content. Be liberal in what we accept. */
+         reasoning), or an array of content parts; reasoning may live in
+         reasoning_content / reasoning; completions-style runtimes use
+         choice.text. Be liberal in what we accept. */
       let content = msg.content;
       if (Array.isArray(content)) content = content.map((part) => (part && (part.text || part.content)) || "").join("");
       if (typeof content !== "string" || !content.trim()) {
-        if (typeof msg.reasoning_content === "string" && msg.reasoning_content.trim()) content = msg.reasoning_content;
-        else content = typeof content === "string" ? content : "";
+        const alt = [msg.reasoning_content, msg.reasoning, choice.text].find((v) => typeof v === "string" && v.trim());
+        content = alt || (typeof content === "string" ? content : "");
       }
       return content;
     };
@@ -2387,6 +2395,10 @@ window.SF = window.SF || {};
       { role: "user", content: userPrompt(text, gen) },
     ];
     let raw = await chat(messages, { temperature: 0.4, jsonMode: true });
+    if (!raw.trim()) {
+      /* nothing came back at all — retrying with the same budget is pointless */
+      throw Object.assign(new Error(t("err.emptyAnswer")), { detail: lastRawBody });
+    }
     try {
       return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
     } catch (e1) {
@@ -2399,8 +2411,11 @@ window.SF = window.SF || {};
       try {
         return { outline: SF.schema.validateOutline(extractJson(raw)), raw, sourceText: text };
       } catch (e2) {
-        const err = new Error(lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
-        err.rawOutput = raw;
+        const empty = !raw || !raw.trim();
+        const err = new Error(empty ? t("err.emptyAnswer")
+          : lastFinishReason === "length" ? t("err.truncated") : t("err.badJson"));
+        if (!empty) err.rawOutput = raw;
+        err.detail = lastRawBody; /* Details always shows the real server response */
         throw err;
       }
     }
@@ -3561,7 +3576,7 @@ window.SF = window.SF || {};
          and dialog can be dismissed; this stays until the next attempt) */
       errBox.hidden = false;
       $("#gen-error-msg").textContent = e.message;
-      $("#gen-error-detail").textContent = e.rawOutput || e.detail || "—";
+      $("#gen-error-detail").textContent = [e.rawOutput, e.detail].filter(Boolean).join("\n\n--- server response ---\n") || "(no response body captured)";
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
         SF.toast(e.message, "error", 10000);

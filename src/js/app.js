@@ -68,7 +68,7 @@
          and dialog can be dismissed; this stays until the next attempt) */
       errBox.hidden = false;
       $("#gen-error-msg").textContent = e.message;
-      $("#gen-error-detail").textContent = e.rawOutput || e.detail || "—";
+      $("#gen-error-detail").textContent = [e.rawOutput, e.detail].filter(Boolean).join("\n\n--- server response ---\n") || "(no response body captured)";
       if (e.rawOutput) {
         /* manual-fix editor (FR-LLM-2 / FR-ERR-3) */
         SF.toast(e.message, "error", 10000);
