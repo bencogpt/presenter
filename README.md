@@ -112,11 +112,14 @@ npm run mock         # mock LLM/Flux2 + static host on :8787
 npm test             # build + e2e suite
 ```
 
-Themes: five built in — Light corporate, **Pastel creative** and **Bold
-gradient** (Slidesgo-inspired: decorative shapes, colored title/section
-slides, organic image frames, slide footers), Dark, and High contrast.
+Themes: ten built in — Light corporate, Dark, High contrast, and seven
+Slidesgo-inspired designs (decorative shapes, colored title/section slides,
+organic image frames, slide footers): **Pastel creative**, **Bold gradient**,
+**Elegant ivory** (serif display type, thin gold frame), **Minimalist**,
+**Retro vintage** (70s sunburst arcs), **Nature botanical** (leaf shapes) and
+**Tech neon** (dark navy, cyan/violet glows).
 Custom org theme: copy a theme block at the top of `src/css/deck.css`,
-adjust the CSS variables, add an `<option>` to both theme selectors in
+adjust the CSS variables, add an `<option>` to the theme selector in
 `src/index.html`, rebuild.
 
 ## Known deviations / open items (tracked from the spec)

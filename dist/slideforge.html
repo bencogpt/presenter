@@ -483,6 +483,106 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
   --sf-deco2: rgba(247, 47, 142, .13);
   --sf-deco3: rgba(47, 183, 247, .16);
 }
+/* Slidesgo-inspired: ivory + deep green + gold, serif display headings */
+.reveal-viewport[data-sf-theme="elegant"], .sf-themed[data-sf-theme="elegant"] {
+  --sf-bg: #faf7f0;
+  --sf-bg-accent: #f1ebdd;
+  --sf-ink: #2b2620;
+  --sf-muted: #6f675c;
+  --sf-accent: #b08d4a;
+  --sf-accent2: #274035;
+  --sf-accent3: #c67b57;
+  --sf-title-bg: #274035;
+  --sf-title-ink: #f3ead7;
+  --sf-heading-ink: #2b2620;
+  --sf-divider-bg: #274035;
+  --sf-divider-ink: #f3ead7;
+  --sf-quote-ink: #8a6d33;
+  --sf-card-bg: #f3eee1;
+  --sf-deco1: rgba(176, 141, 74, .55);
+  --sf-deco2: rgba(39, 64, 53, .5);
+  --sf-deco3: rgba(198, 123, 87, .3);
+}
+/* Slidesgo-inspired: white space, near-black ink, one red accent */
+.reveal-viewport[data-sf-theme="minimal"], .sf-themed[data-sf-theme="minimal"] {
+  --sf-bg: #ffffff;
+  --sf-bg-accent: #f4f4f4;
+  --sf-ink: #141414;
+  --sf-muted: #6e6e6e;
+  --sf-accent: #e0301e;
+  --sf-accent2: #141414;
+  --sf-accent3: #9e9e9e;
+  --sf-title-bg: #ffffff;
+  --sf-title-ink: #141414;
+  --sf-heading-ink: #141414;
+  --sf-divider-bg: #141414;
+  --sf-divider-ink: #ffffff;
+  --sf-quote-ink: #141414;
+  --sf-card-bg: #f7f7f7;
+  --sf-deco1: #e0301e;
+  --sf-deco2: #141414;
+  --sf-deco3: #e5e5e5;
+}
+/* Slidesgo-inspired: 70s cream/mustard/burnt-orange/teal, sunburst arcs */
+.reveal-viewport[data-sf-theme="retro"], .sf-themed[data-sf-theme="retro"] {
+  --sf-bg: #f6ecd9;
+  --sf-bg-accent: #efe0c3;
+  --sf-ink: #3f2d20;
+  --sf-muted: #77604c;
+  --sf-accent: #d95d39;
+  --sf-accent2: #2f6f6a;
+  --sf-accent3: #e3b13e;
+  --sf-title-bg: #d95d39;
+  --sf-title-ink: #fbf3e2;
+  --sf-heading-ink: #3f2d20;
+  --sf-divider-bg: #2f6f6a;
+  --sf-divider-ink: #fbf3e2;
+  --sf-quote-ink: #b34a28;
+  --sf-card-bg: #fbf3e2;
+  --sf-deco1: #e8bd58;
+  --sf-deco2: #d95d39;
+  --sf-deco3: #2f6f6a;
+}
+/* Slidesgo-inspired: botanical sage/forest greens, leaf-shaped blobs */
+.reveal-viewport[data-sf-theme="nature"], .sf-themed[data-sf-theme="nature"] {
+  --sf-bg: #f5f8ef;
+  --sf-bg-accent: #e8efdc;
+  --sf-ink: #23372a;
+  --sf-muted: #5d6f5f;
+  --sf-accent: #3e7d4f;
+  --sf-accent2: #8aab5c;
+  --sf-accent3: #d9a44a;
+  --sf-title-bg: linear-gradient(135deg, #e8efdc 0%, #f5f8ef 60%);
+  --sf-title-ink: #23372a;
+  --sf-heading-ink: #23372a;
+  --sf-divider-bg: linear-gradient(135deg, #2e5d3b 0%, #1c3a26 100%);
+  --sf-divider-ink: #f2f7e8;
+  --sf-quote-ink: #3e7d4f;
+  --sf-card-bg: #ffffff;
+  --sf-deco1: #dce8c5;
+  --sf-deco2: #c3d8a4;
+  --sf-deco3: rgba(217, 164, 74, .55);
+}
+/* Slidesgo-inspired: deep-space navy with neon cyan/violet glows */
+.reveal-viewport[data-sf-theme="tech"], .sf-themed[data-sf-theme="tech"] {
+  --sf-bg: #0b1020;
+  --sf-bg-accent: #131a30;
+  --sf-ink: #e6ecff;
+  --sf-muted: #93a0c4;
+  --sf-accent: #22d3ee;
+  --sf-accent2: #8b5cf6;
+  --sf-accent3: #f471b5;
+  --sf-title-bg: radial-gradient(900px 560px at 75% 15%, #1d1650 0%, #0b1020 65%);
+  --sf-title-ink: #ffffff;
+  --sf-heading-ink: #ffffff;
+  --sf-divider-bg: linear-gradient(120deg, #0e7490 0%, #6d28d9 100%);
+  --sf-divider-ink: #ffffff;
+  --sf-quote-ink: #67e8f9;
+  --sf-card-bg: #131a30;
+  --sf-deco1: rgba(34, 211, 238, .16);
+  --sf-deco2: rgba(139, 92, 246, .2);
+  --sf-deco3: rgba(103, 232, 249, .65);
+}
 
 .reveal-viewport { background: var(--sf-bg); }
 
@@ -524,6 +624,23 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
 .reveal-viewport[data-sf-theme="creative"] li:nth-child(5)::before { color: var(--sf-accent2); }
 .reveal-viewport[data-sf-theme="gradient"] li::before { content: "◆"; font-size: .6em; top: .4em; }
 .reveal-viewport[data-sf-theme="gradient"] li:nth-child(even)::before { color: var(--sf-accent2); }
+.reveal-viewport[data-sf-theme="minimal"] li { padding-left: 1.45em; }
+.reveal-viewport[data-sf-theme="minimal"] li::before { content: "—"; top: -.06em; }
+.reveal-viewport[data-sf-theme="minimal"] [dir="rtl"] li, .reveal-viewport[data-sf-theme="minimal"] li[dir="rtl"] { padding-left: 0; padding-right: 1.45em; }
+.reveal-viewport[data-sf-theme="minimal"] [dir="rtl"] li::before, .reveal-viewport[data-sf-theme="minimal"] li[dir="rtl"]::before { content: "—"; }
+.reveal-viewport[data-sf-theme="retro"] li::before { content: "●"; font-size: .55em; top: .45em; }
+.reveal-viewport[data-sf-theme="retro"] li:nth-child(even)::before { color: var(--sf-accent2); }
+.reveal-viewport[data-sf-theme="nature"] li::before { content: "❧"; font-size: .8em; top: .06em; }
+.reveal-viewport[data-sf-theme="elegant"] li::before { content: "◆"; font-size: .5em; top: .5em; }
+
+/* serif display type for the elegant theme (system serifs: still offline) */
+.reveal-viewport[data-sf-theme="elegant"] h1, .reveal-viewport[data-sf-theme="elegant"] h2,
+.reveal-viewport[data-sf-theme="elegant"] blockquote,
+.sf-themed[data-sf-theme="elegant"] h1, .sf-themed[data-sf-theme="elegant"] h2,
+.sf-themed[data-sf-theme="elegant"] blockquote {
+  font-family: Georgia, "Times New Roman", "Noto Serif Hebrew", serif;
+  font-weight: 700; letter-spacing: 0;
+}
 
 /* accent bar on standard slides — scoped to real sections because reveal.js
    mirrors slide classes onto its .slide-background elements */
@@ -540,6 +657,19 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
 .reveal-viewport[data-sf-theme="creative"] .slides section.sf-slide::after {
   height: 10px; border-radius: 5px;
   background: linear-gradient(90deg, var(--sf-accent) 0 34%, var(--sf-accent3) 34% 67%, var(--sf-accent2) 67% 100%);
+}
+.reveal-viewport[data-sf-theme="minimal"] .slides section.sf-slide::after {
+  height: 3px; width: 120px; border-radius: 0; background: var(--sf-ink);
+}
+.reveal-viewport[data-sf-theme="elegant"] .slides section.sf-slide::after {
+  height: 2px; width: 130px; border-radius: 0; background: var(--sf-accent);
+}
+.reveal-viewport[data-sf-theme="retro"] .slides section.sf-slide::after {
+  height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--sf-accent) 0 34%, var(--sf-accent3) 34% 67%, var(--sf-accent2) 67% 100%);
+}
+.reveal-viewport[data-sf-theme="tech"] .slides section.sf-slide::after {
+  background: linear-gradient(90deg, var(--sf-accent), var(--sf-accent2));
 }
 
 /* ---------- decorative shape layers (Slidesgo-style, CSS only) ----------
@@ -587,6 +717,76 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
 .reveal-viewport[data-sf-theme="gradient"] .sf-deco-c, .sf-themed[data-sf-theme="gradient"] .sf-deco-c {
   width: 130px; height: 130px; top: 60px; right: 120px;
   background: transparent; border: 3px solid var(--sf-deco3); border-radius: 50%;
+}
+
+/* elegant: thin gold frame + diamond marker on the frame line */
+.reveal-viewport[data-sf-theme="elegant"] .sf-deco-a, .sf-themed[data-sf-theme="elegant"] .sf-deco-a {
+  display: block; inset: 22px; border: 1.5px solid var(--sf-deco1); border-radius: 2px;
+}
+.reveal-viewport[data-sf-theme="elegant"] .sf-deco-b, .sf-themed[data-sf-theme="elegant"] .sf-deco-b {
+  display: block; width: 12px; height: 12px; top: 16.5px; left: 50%; margin-left: -6px;
+  background: var(--sf-bg); border: 1.5px solid var(--sf-deco1); transform: rotate(45deg);
+}
+.reveal-viewport[data-sf-theme="elegant"] .sf-l-title .sf-deco-b,
+.reveal-viewport[data-sf-theme="elegant"] .sf-l-section .sf-deco-b,
+.sf-themed[data-sf-theme="elegant"] .sf-l-title .sf-deco-b,
+.sf-themed[data-sf-theme="elegant"] .sf-l-section .sf-deco-b { background: var(--sf-title-bg); border-color: rgba(243, 234, 215, .7); }
+.reveal-viewport[data-sf-theme="elegant"] .sf-l-title .sf-deco-a,
+.reveal-viewport[data-sf-theme="elegant"] .sf-l-section .sf-deco-a,
+.sf-themed[data-sf-theme="elegant"] .sf-l-title .sf-deco-a,
+.sf-themed[data-sf-theme="elegant"] .sf-l-section .sf-deco-a { border-color: rgba(243, 234, 215, .5); }
+
+/* minimal: one small red square, top-right — nothing else */
+.reveal-viewport[data-sf-theme="minimal"] .sf-deco-a, .sf-themed[data-sf-theme="minimal"] .sf-deco-a {
+  display: block; width: 20px; height: 20px; top: 56px; right: 60px; background: var(--sf-deco1);
+}
+
+/* retro: sunburst arcs bottom-left, mustard semicircle top-right, teal ring */
+.reveal-viewport[data-sf-theme="retro"] .sf-deco, .sf-themed[data-sf-theme="retro"] .sf-deco { display: block; }
+.reveal-viewport[data-sf-theme="retro"] .sf-deco-a, .sf-themed[data-sf-theme="retro"] .sf-deco-a {
+  width: 380px; height: 380px; bottom: -170px; left: -150px; border-radius: 50%;
+  background: repeating-radial-gradient(circle, var(--sf-deco2) 0 20px, transparent 20px 42px);
+  opacity: .3;
+}
+.reveal-viewport[data-sf-theme="retro"] .sf-deco-b, .sf-themed[data-sf-theme="retro"] .sf-deco-b {
+  width: 250px; height: 125px; top: 0; right: 90px;
+  background: var(--sf-deco1); border-radius: 0 0 125px 125px; opacity: .75;
+}
+.reveal-viewport[data-sf-theme="retro"] .sf-deco-c, .sf-themed[data-sf-theme="retro"] .sf-deco-c {
+  width: 90px; height: 90px; bottom: 56px; right: 64px;
+  background: transparent; border: 12px solid var(--sf-deco3); border-radius: 50%; opacity: .5;
+}
+
+/* nature: leaf-shaped blobs + gold dot cluster */
+.reveal-viewport[data-sf-theme="nature"] .sf-deco, .sf-themed[data-sf-theme="nature"] .sf-deco { display: block; }
+.reveal-viewport[data-sf-theme="nature"] .sf-deco-a, .sf-themed[data-sf-theme="nature"] .sf-deco-a {
+  width: 320px; height: 320px; top: -120px; right: -90px;
+  background: var(--sf-deco1); border-radius: 0 50% 12% 50%; transform: rotate(18deg);
+}
+.reveal-viewport[data-sf-theme="nature"] .sf-deco-b, .sf-themed[data-sf-theme="nature"] .sf-deco-b {
+  width: 210px; height: 210px; bottom: -80px; left: -60px;
+  background: var(--sf-deco2); border-radius: 50% 0 50% 12%; transform: rotate(12deg);
+}
+.reveal-viewport[data-sf-theme="nature"] .sf-deco-c, .sf-themed[data-sf-theme="nature"] .sf-deco-c {
+  width: 150px; height: 100px; bottom: 46px; right: 70px;
+  background-image: radial-gradient(circle, var(--sf-deco3) 4px, transparent 4.5px);
+  background-size: 26px 26px;
+}
+
+/* tech: neon glow discs + cyan dot grid */
+.reveal-viewport[data-sf-theme="tech"] .sf-deco, .sf-themed[data-sf-theme="tech"] .sf-deco { display: block; }
+.reveal-viewport[data-sf-theme="tech"] .sf-deco-a, .sf-themed[data-sf-theme="tech"] .sf-deco-a {
+  width: 440px; height: 440px; top: -180px; right: -150px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 65%, var(--sf-deco2), transparent 70%);
+}
+.reveal-viewport[data-sf-theme="tech"] .sf-deco-b, .sf-themed[data-sf-theme="tech"] .sf-deco-b {
+  width: 340px; height: 340px; bottom: -150px; left: -110px; border-radius: 50%;
+  background: radial-gradient(circle at 65% 35%, var(--sf-deco1), transparent 70%);
+}
+.reveal-viewport[data-sf-theme="tech"] .sf-deco-c, .sf-themed[data-sf-theme="tech"] .sf-deco-c {
+  width: 190px; height: 120px; top: 56px; right: 70px;
+  background-image: radial-gradient(circle, var(--sf-deco3) 2.5px, transparent 3px);
+  background-size: 24px 24px; opacity: .8;
 }
 
 /* subtle corner accents for corporate/dark too (kept faint) */
@@ -724,6 +924,11 @@ dialog.dlg::backdrop { background: rgba(15, 22, 40, .45); }
         <option value="corporate" data-i18n="theme.corporate">Light corporate</option>
         <option value="creative" data-i18n="theme.creative">Pastel creative</option>
         <option value="gradient" data-i18n="theme.gradient">Bold gradient</option>
+        <option value="elegant" data-i18n="theme.elegant">Elegant ivory</option>
+        <option value="minimal" data-i18n="theme.minimal">Minimalist</option>
+        <option value="retro" data-i18n="theme.retro">Retro vintage</option>
+        <option value="nature" data-i18n="theme.nature">Nature botanical</option>
+        <option value="tech" data-i18n="theme.tech">Tech neon</option>
         <option value="dark" data-i18n="theme.dark">Dark</option>
         <option value="contrast" data-i18n="theme.contrast">High contrast</option>
       </select>
@@ -1311,6 +1516,8 @@ window.SF = window.SF || {};
     "tb.theme": "Theme",
     "theme.corporate": "Light corporate", "theme.dark": "Dark", "theme.contrast": "High contrast",
     "theme.creative": "Pastel creative", "theme.gradient": "Bold gradient",
+    "theme.elegant": "Elegant ivory", "theme.minimal": "Minimalist", "theme.retro": "Retro vintage",
+    "theme.nature": "Nature botanical", "theme.tech": "Tech neon",
     "tb.lang": "עברית",
 
     /* banners */
@@ -1506,6 +1713,8 @@ window.SF = window.SF || {};
     "tb.theme": "ערכת עיצוב",
     "theme.corporate": "בהיר עסקי", "theme.dark": "כהה", "theme.contrast": "ניגודיות גבוהה",
     "theme.creative": "פסטל יצירתי", "theme.gradient": "גרדיאנט נועז",
+    "theme.elegant": "שנהב אלגנטי", "theme.minimal": "מינימליסטי", "theme.retro": "רטרו וינטג'",
+    "theme.nature": "טבע בוטני", "theme.tech": "טכנולוגי ניאון",
     "tb.lang": "English",
 
     "banner.unsupported": "הדפדפן חסר יכולות נדרשות (fetch, FileReader, structuredClone, canvas). יש להשתמש ב-Chromium ‏110 ומעלה או Firefox ‏110 ומעלה.",
@@ -2456,6 +2665,11 @@ window.SF = window.SF || {};
     contrast:  { ink: "#ffffff", grid: "rgba(255,255,255,.28)", palette: ["#ffd400", "#00e5ff", "#ff6ec7", "#7CFC00", "#ff9e00", "#ffffff"] },
     creative:  { ink: "#2d2a32", grid: "rgba(45,42,50,.10)", palette: ["#ff6b5e", "#17b8a6", "#ffc145", "#7c6ff0", "#2d9cdb", "#e8618c"] },
     gradient:  { ink: "#241b3a", grid: "rgba(36,27,58,.10)", palette: ["#7b2ff7", "#f72f8e", "#2fb7f7", "#f7a72f", "#27c39f", "#5d5fef"] },
+    elegant:   { ink: "#2b2620", grid: "rgba(43,38,32,.12)", palette: ["#b08d4a", "#274035", "#c67b57", "#7a8b6f", "#8f5f43", "#4a6358"] },
+    minimal:   { ink: "#141414", grid: "rgba(20,20,20,.10)", palette: ["#141414", "#e0301e", "#767676", "#b5b5b5", "#4a4a4a", "#e08f86"] },
+    retro:     { ink: "#3f2d20", grid: "rgba(63,45,32,.12)", palette: ["#d95d39", "#2f6f6a", "#e3b13e", "#7d4a32", "#4a8f88", "#c88b2e"] },
+    nature:    { ink: "#23372a", grid: "rgba(35,55,42,.12)", palette: ["#3e7d4f", "#8aab5c", "#d9a44a", "#5b8f8a", "#a2c084", "#7a5c3e"] },
+    tech:      { ink: "#e6ecff", grid: "rgba(230,236,255,.14)", palette: ["#22d3ee", "#8b5cf6", "#f471b5", "#34d399", "#facc15", "#60a5fa"] },
   };
 
   function toChartJsConfig(spec, theme, opts) {
@@ -3430,7 +3644,7 @@ window.SF = window.SF || {};
       }
       state.outline = outline;
       state.assets = assets;
-      state.theme = ["corporate", "dark", "contrast", "creative", "gradient"].includes(json.theme) ? json.theme : "corporate";
+      state.theme = ["corporate", "dark", "contrast", "creative", "gradient", "elegant", "minimal", "retro", "nature", "tech"].includes(json.theme) ? json.theme : "corporate";
       const dOpts = json.deckOpts && typeof json.deckOpts === "object" ? json.deckOpts : {};
       state.deckOpts = {
         transition: ["slide", "fade", "convex", "zoom", "none"].includes(dOpts.transition) ? dOpts.transition : "slide",

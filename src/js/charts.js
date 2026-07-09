@@ -8,6 +8,11 @@
     contrast:  { ink: "#ffffff", grid: "rgba(255,255,255,.28)", palette: ["#ffd400", "#00e5ff", "#ff6ec7", "#7CFC00", "#ff9e00", "#ffffff"] },
     creative:  { ink: "#2d2a32", grid: "rgba(45,42,50,.10)", palette: ["#ff6b5e", "#17b8a6", "#ffc145", "#7c6ff0", "#2d9cdb", "#e8618c"] },
     gradient:  { ink: "#241b3a", grid: "rgba(36,27,58,.10)", palette: ["#7b2ff7", "#f72f8e", "#2fb7f7", "#f7a72f", "#27c39f", "#5d5fef"] },
+    elegant:   { ink: "#2b2620", grid: "rgba(43,38,32,.12)", palette: ["#b08d4a", "#274035", "#c67b57", "#7a8b6f", "#8f5f43", "#4a6358"] },
+    minimal:   { ink: "#141414", grid: "rgba(20,20,20,.10)", palette: ["#141414", "#e0301e", "#767676", "#b5b5b5", "#4a4a4a", "#e08f86"] },
+    retro:     { ink: "#3f2d20", grid: "rgba(63,45,32,.12)", palette: ["#d95d39", "#2f6f6a", "#e3b13e", "#7d4a32", "#4a8f88", "#c88b2e"] },
+    nature:    { ink: "#23372a", grid: "rgba(35,55,42,.12)", palette: ["#3e7d4f", "#8aab5c", "#d9a44a", "#5b8f8a", "#a2c084", "#7a5c3e"] },
+    tech:      { ink: "#e6ecff", grid: "rgba(230,236,255,.14)", palette: ["#22d3ee", "#8b5cf6", "#f471b5", "#34d399", "#facc15", "#60a5fa"] },
   };
 
   function toChartJsConfig(spec, theme, opts) {

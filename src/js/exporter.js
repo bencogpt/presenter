@@ -165,7 +165,7 @@
       }
       state.outline = outline;
       state.assets = assets;
-      state.theme = ["corporate", "dark", "contrast", "creative", "gradient"].includes(json.theme) ? json.theme : "corporate";
+      state.theme = ["corporate", "dark", "contrast", "creative", "gradient", "elegant", "minimal", "retro", "nature", "tech"].includes(json.theme) ? json.theme : "corporate";
       const dOpts = json.deckOpts && typeof json.deckOpts === "object" ? json.deckOpts : {};
       state.deckOpts = {
         transition: ["slide", "fade", "convex", "zoom", "none"].includes(dOpts.transition) ? dOpts.transition : "slide",

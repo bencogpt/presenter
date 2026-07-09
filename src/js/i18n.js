@@ -17,6 +17,8 @@
     "tb.theme": "Theme",
     "theme.corporate": "Light corporate", "theme.dark": "Dark", "theme.contrast": "High contrast",
     "theme.creative": "Pastel creative", "theme.gradient": "Bold gradient",
+    "theme.elegant": "Elegant ivory", "theme.minimal": "Minimalist", "theme.retro": "Retro vintage",
+    "theme.nature": "Nature botanical", "theme.tech": "Tech neon",
     "tb.lang": "עברית",
 
     /* banners */
@@ -212,6 +214,8 @@
     "tb.theme": "ערכת עיצוב",
     "theme.corporate": "בהיר עסקי", "theme.dark": "כהה", "theme.contrast": "ניגודיות גבוהה",
     "theme.creative": "פסטל יצירתי", "theme.gradient": "גרדיאנט נועז",
+    "theme.elegant": "שנהב אלגנטי", "theme.minimal": "מינימליסטי", "theme.retro": "רטרו וינטג'",
+    "theme.nature": "טבע בוטני", "theme.tech": "טכנולוגי ניאון",
     "tb.lang": "English",
 
     "banner.unsupported": "הדפדפן חסר יכולות נדרשות (fetch, FileReader, structuredClone, canvas). יש להשתמש ב-Chromium ‏110 ומעלה או Firefox ‏110 ומעלה.",

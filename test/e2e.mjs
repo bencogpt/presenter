@@ -124,6 +124,16 @@ try {
   check("slide card marked skipped", await page.locator(".slide-card").nth(4).evaluate((n) => n.classList.contains("skipped")));
   check("preview skips hidden slide", await page.evaluate(() => !!document.querySelector('#reveal-slides section[data-visibility="hidden"]')));
 
+  console.log("5c. new Slidesgo-style themes re-skin the live preview");
+  for (const th of ["elegant", "minimal", "retro", "nature", "tech"]) {
+    await page.selectOption("#theme-select", th);
+    await page.waitForTimeout(120);
+    const applied = await page.getAttribute(".reveal-viewport", "data-sf-theme");
+    const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".reveal-viewport")).backgroundColor);
+    check(`theme "${th}" applied to preview`, applied === th && bg !== "rgba(0, 0, 0, 0)", `attr=${applied} bg=${bg}`);
+  }
+  await page.selectOption("#theme-select", "retro"); // exercised through the export/import legs below
+
   console.log("6. export dialog: deck + project");
   await page.click("#btn-export");
   await page.waitForSelector("#dlg-export[open]");
@@ -143,6 +153,7 @@ try {
   check("hidden slide exported as data-visibility=hidden", deckHtml.includes('data-visibility="hidden"'));
   check("kiosk auto-advance + loop exported", deckHtml.includes("autoSlide: 8000") && deckHtml.includes("loop: true"));
   check("zoom + search plugins embedded", deckHtml.includes("RevealZoom") && deckHtml.includes("RevealSearch"));
+  check("selected new theme carried into exported deck", deckHtml.includes('data-sf-theme\', "retro"'));
 
   const [projDl] = await Promise.all([page.waitForEvent("download"), page.click("#btn-export-project")]);
   const projPath = join(tmp, "project.json");
@@ -196,6 +207,7 @@ try {
   check("project import restores slides", (await page.locator(".slide-card").count()) === 5);
   check("hidden-slide flag survives project round-trip", await page.locator(".slide-card").nth(4).evaluate((n) => n.classList.contains("skipped")));
   check("deck options restored from project", (await page.inputValue("#deck-transition")) === "fade" && (await page.isChecked("#deck-fragments")));
+  check("new theme survives project round-trip", (await page.inputValue("#theme-select")) === "retro");
 
   console.log("8b. JSON mode sends response_format and still generates");
   await page.click("#btn-open-settings");
