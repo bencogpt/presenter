@@ -39,6 +39,42 @@
   let lastFinishReason = null;
   let lastRawBody = null; // last chat HTTP body — evidence for the Details expander
 
+  /* Runtime compatibility, learned from 400 bodies within a session.
+     Most OpenAI-compatible servers (vLLM, llama.cpp, LM Studio…) accept the
+     classic body. OpenAI's own o-series / GPT-5 models reject `max_tokens`
+     (want `max_completion_tokens`) and reject any non-default `temperature`.
+     We adapt on the first 400 that says so and keep the setting for the
+     rest of the session, so generation works without the user touching it. */
+  const compat = { maxTokensParam: "max_tokens", sendTemperature: true };
+
+  function buildBody(messages, opts) {
+    const c = state.config;
+    const b = { model: c.llmModel, messages, stream: false };
+    b[compat.maxTokensParam] = opts.maxTokens ?? c.maxTokens;
+    if (compat.sendTemperature) b.temperature = opts.temperature ?? 0.4;
+    /* only on calls whose answer IS JSON (never summaries/ping) */
+    if (opts.jsonMode && c.jsonMode) b.response_format = { type: "json_object" };
+    return JSON.stringify(b);
+  }
+
+  /** If a 400 body names an unsupported parameter we know how to fix, flip
+      the compat flag and report true so the caller can retry. One-way flags
+      guarantee this adapts at most once per parameter (no infinite retry). */
+  function adaptFrom400(bodyText) {
+    const s = bodyText || "";
+    if (compat.maxTokensParam === "max_tokens" &&
+        /max_completion_tokens|max_tokens['"]?\s*(?:is\s+not\s+supported|is\s+unsupported)|unsupported.*max_tokens/i.test(s)) {
+      compat.maxTokensParam = "max_completion_tokens";
+      return true;
+    }
+    if (compat.sendTemperature &&
+        /temperature['"]?\s*(?:does\s+not\s+support|is\s+not\s+supported|is\s+unsupported)|only\s+the\s+default\s*\(?1\)?\s*value.*temperature|unsupported\s+value.*temperature/i.test(s)) {
+      compat.sendTemperature = false;
+      return true;
+    }
+    return false;
+  }
+
   async function rawFetch(url, opts, timeoutS) {
     const ctrl = new AbortController();
     activeController = ctrl;
@@ -71,24 +107,19 @@
     opts = opts || {};
     const c = state.config;
     if (!c.llmBase || !c.llmModel) throw new Error(t("err.llmNotConfigured"));
-    const body = JSON.stringify({
-      model: c.llmModel,
-      messages,
-      temperature: opts.temperature ?? 0.4,
-      max_tokens: opts.maxTokens ?? c.maxTokens,
-      stream: false,
-      /* only on calls whose answer IS JSON (never summaries/ping) */
-      ...(opts.jsonMode && c.jsonMode ? { response_format: { type: "json_object" } } : {}),
-    });
     const doCall = async () => {
       const r = await rawFetch(c.llmBase + "/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(c.llmToken ? { Authorization: "Bearer " + c.llmToken } : {}) },
-        body,
+        body: buildBody(messages, opts),
       }, opts.timeoutS);
       const bodyText = await r.text().catch(() => "");
       lastRawBody = bodyText.slice(0, 4000);
-      if (!r.ok) throw apiError(r.status, bodyText);
+      if (!r.ok) {
+        /* self-heal known OpenAI o-series / GPT-5 parameter rejections and retry */
+        if (r.status === 400 && adaptFrom400(bodyText)) return doCall();
+        throw apiError(r.status, bodyText);
+      }
       let json;
       try { json = JSON.parse(bodyText); } catch (e) { throw Object.assign(new Error(t("err.llmShape")), { detail: lastRawBody }); }
       lastFinishReason = json && json.choices && json.choices[0] && json.choices[0].finish_reason || null;

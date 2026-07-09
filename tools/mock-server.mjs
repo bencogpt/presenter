@@ -104,6 +104,24 @@ createServer(async (req, res) => {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: { message: "This model's maximum context length is 32768 tokens. However, you requested more tokens than that. Please reduce the length of the messages or completion.", type: "invalid_request_error" } }));
     }
+    /* emulate OpenAI's "model does not exist" 400 (a plain, non-adaptable error) */
+    if (/no-such-model|does-not-exist/i.test(body.model || "")) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: { message: "The model `" + body.model + "` does not exist or you do not have access to it.", type: "invalid_request_error", param: null, code: "model_not_found" } }));
+    }
+    /* emulate OpenAI's o-series / GPT-5 parameter rules: reject max_tokens
+       (want max_completion_tokens) and reject any non-default temperature.
+       A well-behaved client self-heals and retries, so the app still works. */
+    if (/gpt-5|o1|o3|reasoning-strict/i.test(body.model || "")) {
+      if ("max_tokens" in body) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: { message: "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.", type: "invalid_request_error", param: "max_tokens", code: "unsupported_parameter" } }));
+      }
+      if ("temperature" in body && body.temperature !== 1) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: { message: "Unsupported value: 'temperature' does not support " + body.temperature + " with this model. Only the default (1) value is supported.", type: "invalid_request_error", param: "temperature", code: "unsupported_value" } }));
+      }
+    }
     const userMsg = (body.messages.find((m) => m.role === "user") || {}).content || "";
     const sysMsg = (body.messages.find((m) => m.role === "system") || {}).content || "";
     let content;

@@ -368,6 +368,30 @@ try {
   await page.click("#btn-test-flux");
   await page.waitForSelector("#flux-test-result.ok", { timeout: 15000 });
   check("FastAPI-style image generated ({image: b64} response parsed)", true);
+
+  console.log("13. OpenAI o-series / GPT-5: client self-heals max_tokens + temperature 400s");
+  await page.waitForSelector("#dlg-settings[open]"); // still open from the earlier tests
+  await page.fill("#cfg-llm-token", "test-token");
+  await page.fill("#cfg-llm-model", "gpt-5-test"); // mock rejects max_tokens + temperature for this model
+  const strictBodies = [];
+  await page.route("**/v1/chat/completions", (route) => {
+    try { strictBodies.push(JSON.parse(route.request().postData() || "{}")); } catch (e) {}
+    route.continue();
+  });
+  await page.click("#btn-test-llm");
+  await page.waitForSelector("#llm-test-result.ok", { timeout: 15000 });
+  check("connection test passes against a strict OpenAI model", true);
+  check("client dropped max_tokens for max_completion_tokens", strictBodies.some((b) => "max_completion_tokens" in b && !("max_tokens" in b)));
+  check("client dropped the non-default temperature", strictBodies.some((b) => !("temperature" in b)));
+  await page.unroute("**/v1/chat/completions");
+
+  console.log("14. plain 400 (model not found) surfaces the server's message");
+  await page.fill("#cfg-llm-model", "no-such-model");
+  await page.click("#btn-test-llm");
+  await page.waitForSelector("#llm-test-result.fail", { timeout: 10000 });
+  const detail = await page.textContent("#llm-test-result .test-detail");
+  check("server error message shown in the test result", /does not exist/.test(detail || ""), detail);
+  await page.fill("#cfg-llm-model", "mock-glm"); // restore
 } finally {
   await browser.close();
   server.kill();

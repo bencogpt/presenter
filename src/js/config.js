@@ -102,6 +102,25 @@
   }
 
   /* ---------- connectivity tests (spec FR-CFG-2) ---------- */
+  /* Pull the human-readable message out of an error's server body so the
+     test shows WHY (e.g. "model does not exist") instead of a bare status. */
+  function serverDetail(e) {
+    if (!e || !e.detail) return "";
+    try {
+      const j = JSON.parse(e.detail);
+      const m = (j.error && (j.error.message || j.error)) || j.message || j.detail;
+      if (typeof m === "string" && m.trim()) return m.trim();
+    } catch (_) { /* not JSON */ }
+    const s = String(e.detail).trim();
+    return s ? s.slice(0, 300) : "";
+  }
+  function showTestFail(out, e) {
+    out.textContent = "✘ " + e.message;
+    const d = serverDetail(e);
+    if (d) out.appendChild(SF.el("span", { class: "test-detail", text: t("cfg.serverSaid", { msg: d }) }));
+    out.classList.add("fail");
+  }
+
   async function testLlm() {
     const out = $("#llm-test-result");
     out.className = "test-result"; out.textContent = t("cfg.testing");
@@ -114,8 +133,7 @@
       out.textContent = t("cfg.testOk", { ms: Math.round(performance.now() - t0) });
       out.classList.add("ok");
     } catch (e) {
-      out.textContent = "✘ " + e.message;
-      out.classList.add("fail");
+      showTestFail(out, e);
     }
   }
 
@@ -132,8 +150,7 @@
       out.textContent = t("cfg.testImg");
       out.classList.add("ok");
     } catch (e) {
-      out.textContent = "✘ " + e.message;
-      out.classList.add("fail");
+      showTestFail(out, e);
     }
   }
 

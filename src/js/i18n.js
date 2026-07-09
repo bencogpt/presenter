@@ -161,6 +161,7 @@
     "cfg.testingImg": "Testing… (generates a tiny test image — can take up to a minute)",
     "cfg.noImgApi": "No image-generation API at this URL ({status}) — this looks like a text-model endpoint or a wrong base URL.",
     "cfg.testImg": "✔ OK (test image generated)", "cfg.noUrl": "✘ No base URL set",
+    "cfg.serverSaid": "Server said: {msg}",
     "cfg.tokenConfirm": "Store API tokens in this browser's localStorage? Anyone with access to this machine account could read them. Never enable this on a shared computer.",
     "cfg.tokenBtn": "I understand — store tokens",
 
@@ -348,6 +349,7 @@
     "cfg.testingImg": "בודק… (נוצרת תמונת בדיקה קטנה — עשוי לקחת עד דקה)",
     "cfg.noImgApi": "אין API ליצירת תמונות בכתובת זו ({status}) — נראה כמו כתובת של מודל טקסט או כתובת שגויה.",
     "cfg.testImg": "✔ תקין (נוצרה תמונת בדיקה)", "cfg.noUrl": "✘ לא הוגדרה כתובת בסיס",
+    "cfg.serverSaid": "השרת החזיר: {msg}",
     "cfg.tokenConfirm": "לשמור טוקנים ב-localStorage של הדפדפן? כל מי שיש לו גישה לחשבון במחשב זה יוכל לקרוא אותם. לעולם לא במחשב משותף.",
     "cfg.tokenBtn": "אני מבין/ה — שמור טוקנים",
 
